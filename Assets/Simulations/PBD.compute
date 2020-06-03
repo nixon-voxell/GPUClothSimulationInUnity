@@ -1,0 +1,252 @@
+﻿// define structs
+struct Triangleids
+{
+  uint A;
+  uint B;
+  uint C;
+
+  float AB;
+  float BC;
+  float CA;
+};
+
+// uniform data
+float deltaT;
+float time;
+
+half3 gravity;
+half stiffness;
+half bendiness;
+half collisionRadius;
+
+float particleMass;
+float particleInvertMass;
+
+half3 windDirection;
+half windStrength;
+half windSpeed;
+half turbulence;
+half drag;
+half lift;
+
+uint totalSimulationVerts;
+uint totalSimulationTriangles;
+
+RWStructuredBuffer<float3> positions;
+RWStructuredBuffer<float3> projectedPositions;
+RWStructuredBuffer<float3> velocities;
+RWStructuredBuffer<float> restLength;
+RWStructuredBuffer<Triangleids> sortedTriangles;
+RWStructuredBuffer<float> boneWeight;
+
+float2 unity_gradientNoise_dir(float2 p)
+{
+  p = p % 289;
+  float x = (34 * p.x + 1) * p.x % 289 + p.y;
+  x = (34 * x + 1) * x % 289;
+  x = frac(x / 41) * 2 - 1;
+  return normalize(float2(x - floor(x + 0.5), abs(x) - 0.5));
+}
+
+float unity_gradientNoise(float2 p)
+{
+  float2 ip = floor(p);
+  float2 fp = frac(p);
+  float d00 = dot(unity_gradientNoise_dir(ip), fp);
+  float d01 = dot(unity_gradientNoise_dir(ip + float2(0, 1)), fp - float2(0, 1));
+  float d10 = dot(unity_gradientNoise_dir(ip + float2(1, 0)), fp - float2(1, 0));
+  float d11 = dot(unity_gradientNoise_dir(ip + float2(1, 1)), fp - float2(1, 1));
+  fp = fp * fp * fp * (fp * (fp * 6 - 15) + 10);
+  return lerp(lerp(d00, d01, fp.y), lerp(d10, d11, fp.y), fp.x);
+}
+
+float3 Unity_GradientNoise_float(float2 UV, float Scale)
+{
+  float f = unity_gradientNoise(UV * Scale) + 0.5;
+  return float3(f, f, f);
+}
+
+// forces-----------------------------------------
+#pragma kernel ExternalForce
+[numthreads(64, 1, 1)]
+void ExternalForce (uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+
+  float3 v = velocities[idx];
+  float w = boneWeight[idx] * particleInvertMass;
+
+  // gravity
+  float3 f = gravity * particleMass;
+
+  if (idx != 0)
+  {
+    v += deltaT * w * f;
+  }
+
+  velocities[idx] = v;
+}
+
+#pragma kernel DampVelocities
+[numthreads(8, 1, 1)]
+void DampVelocities(uint3 id : SV_DispatchThreadID){
+  uint idx = id.x;
+
+  float3 velocity = velocities[idx];
+  velocities[idx] = velocity * 0.998;
+}
+
+#pragma kernel ApplyExplicitEuler
+[numthreads(8, 1, 1)]
+void ApplyExplicitEuler(uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+
+  projectedPositions[idx] = positions[idx] + velocities[idx] * deltaT;
+}
+// forces-----------------------------------------
+
+// collisions-------------------------------------
+#pragma kernel MeshCollision
+[numthreads(64, 1, 1)]
+void MeshCollision (uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+}
+
+#pragma kernel SphereCollision
+[numthreads(64, 1, 1)]
+void SphereCollision (uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+}
+
+#pragma kernel CapsuleCollision
+[numthreads(64, 1, 1)]
+void CapsuleCollision (uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+  if (idx >= totalSimulationVerts) return;
+}
+
+bool IsPointInCube(float3 position, float3 extent)
+{
+  return abs(position.x) < extent.x && abs(position.y) < extent.y && abs(position.z) < extent.z;
+}
+
+#pragma kernel BoxCollision
+[numthreads(64, 1, 1)]
+void BoxCollision (uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+  // float3 projectedPosition = projectedPositions[id.x];
+  
+  // for (uint i = 0; i < numCollidableCubes; i++) {  
+  //   float3 center = collidableCubes[i].center;
+  //   float3 extent = collidableCubes[i].extent;
+  //   float3 localPosition = projectedPosition - center;
+
+  //   if (IsPointInCube(localPosition, extent)) {
+  //     int closestAxis = -1;
+  //     float closestDist = 99999;
+  //     for (int i = 0; i < 3; i++) {
+  //       float dist = abs(localPosition[i] - extent[i]);
+  //       if (dist < closestDist) {
+  //         closestDist = dist;
+  //         closestAxis = i;
+  //       }
+  //     }
+
+  //     float3 newPos = localPosition;
+  //     if (closestAxis == 0) {
+  //       newPos.x = (extent.x + 0.001f) * sign(localPosition.x);
+  //     }
+  //     else if (closestAxis == 1) {
+  //       newPos.y = (extent.y + 0.001f) * sign(localPosition.y);
+  //     }
+  //     else if (closestAxis == 2) {
+  //       newPos.z = (extent.z + 0.001f) * sign(localPosition.z);
+  //     }
+
+  //     projectedPosition = newPos + center;
+  //     frictions[id.x] = 0.8f;
+  //   }
+  // }
+
+  // projectedPositions[id.x] = projectedPosition;
+}
+// collisions-------------------------------------
+
+// constraints------------------------------------
+float3 BinaryDistanceConstraint(float3 pI, float3 pJ, float wI, float wJ, float restd)
+{
+  // returns where pI should go
+  return (wI/(wI + wJ)) * (distance(pI, pJ) - restd) * normalize(pJ-pI);
+}
+#pragma kernel DistanceConstraint
+[numthreads(64, 1, 1)]
+void DistanceConstraint (uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+
+  uint idxA = sortedTriangles[idx].A;
+  uint idxB = sortedTriangles[idx].B;
+  uint idxC = sortedTriangles[idx].C;
+
+  float3 A = projectedPositions[idxA];
+  float3 B = projectedPositions[idxB];
+  float3 C = projectedPositions[idxC];
+
+  float AB = sortedTriangles[idx].AB;
+  float BC = sortedTriangles[idx].BC;
+  float CA = sortedTriangles[idx].CA;
+
+  float wA = particleInvertMass;// * boneWeight[idxA];
+  float wB = particleInvertMass;// * boneWeight[idxB];
+  float wC = particleInvertMass;// * boneWeight[idxC];
+
+  float3 dA = BinaryDistanceConstraint(A, B, wA, wB, AB);
+  dA += BinaryDistanceConstraint(A, C, wA, wC, CA);
+  // dA *= 0.5;
+
+  float3 dB = BinaryDistanceConstraint(B, C, wB, wC, BC);
+  dB += BinaryDistanceConstraint(B, A, wB, wA, AB);
+  // dB *= 0.5;
+
+  float3 dC = BinaryDistanceConstraint(C, A, wC, wA, CA);
+  dC += BinaryDistanceConstraint(C, B, wC, wB, BC);
+  // dC *= 0.5;
+
+  A += dA * stiffness;
+  B += dB * stiffness;
+  C += dC * stiffness;
+  
+  projectedPositions[idxA] = A;
+  projectedPositions[idxB] = B;
+  projectedPositions[idxC] = C;
+}
+
+#pragma kernel BendConstraint
+[numthreads(64, 1, 1)]
+void BendConstraint (uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+}
+
+#pragma kernel SelfCollision
+[numthreads(64, 1, 1)]
+void SelfCollision (uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+}
+
+#pragma kernel UpdatePositions
+[numthreads(64, 1, 1)]
+void UpdatePositions (uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+
+  velocities[idx] = (projectedPositions[idx] - positions[idx]) / deltaT;// * frictions[idx];
+  positions[idx] = projectedPositions[idx];
+}
+// constraints------------------------------------

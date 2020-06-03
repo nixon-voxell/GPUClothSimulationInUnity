@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2dea6c8f08b4af84f9643cc746d7d0a0
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - mesh: {instanceID: 0}
+  - solver: {fileID: 7200000, guid: a625bdce07e4dcc42b23c2d549862493, type: 3}
+  - particlePrefab: {fileID: 8073726894815134156, guid: 2a15feaa422fff14ba8174fd95e8e78a,
+      type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
