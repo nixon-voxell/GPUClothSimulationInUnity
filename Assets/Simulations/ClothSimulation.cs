@@ -26,20 +26,17 @@ public class ClothSimulation : MonoBehaviour
   public Vector3[] verts;
   [HideInInspector]
   public int[] triangles;
-  Vector3[] pos;
-  Vector3[] vel;
-  Triangleids[] tri;
-  float[] rl;
-  float[] bw;
-  float time = 0;
 
   [HideInInspector]
   public VertexData vertexData;
+
+  GameObject backSide;
+  Mesh backMesh;
   #endregion
 
   #region Cloth Simulation Parameters
   [Header("Cloth Simulation Parameters")]
-  public ComputeShader solver;
+  public ComputeShader PBDClothSolver;
   [Tooltip("Keep this as low as possible to increase performance. " +
   "Increase this to increase quality of cloth (ex: more detailed folds and less clipping chance).")]
   public uint iterationSteps = 2;
@@ -53,10 +50,13 @@ public class ClothSimulation : MonoBehaviour
   public float stiffness = 0.9f;
   [Range(0, 1)]
   public float bendiness = 0.85f;
-  public float collisionRadius = 0.1f;
+  [Range(0, 1)]
+  public float bendingStiffness = 0.9f;
+  // public float restAngle = ;
+  public float collisionRadius = 0.02f;
 
   [Tooltip("Mass of each particle representing each vertices.")]
-  public float particleMass = 0.1f;
+  public float particleMass = 0.01f;
   [ConditionalHideAttribute("hide")]
   [Tooltip("1/particle mass")]
   public float particleInvertMass;
@@ -80,18 +80,12 @@ public class ClothSimulation : MonoBehaviour
 
   #region Collision Parameters
   [Header("Collision Parameters")]
-  public SkinnedMeshRenderer[] skinnedMeshColliders;
+  // mesh collision
+  public SkinnedMeshRenderer skinnedMeshCollider;
+  public float meshCollisionRadius = 0.1f;
   public SphereCollider[] SphereColliders;
   public BoxCollider[] BoxColliders;
   public CapsuleCollider[] CapsuleColliders;
-  #endregion
-
-  #region Debug Settings
-  [Header("Debug Settings")]
-  public GameObject parentObject;
-  public GameObject particlePrefab;
-  public Vector3 particleScale = new Vector3(0.01f, 0.01f, 0.01f);
-  GameObject[] particles;
   #endregion
 
   #region Save Path
@@ -106,11 +100,28 @@ public class ClothSimulation : MonoBehaviour
   #endregion
 
   #region ComputeShader Variables
+  Vector3[] pos;
+  Vector3[] vel;
+  Vector3[] deltaP;
+  UInt3Struct[] deltaPuint;
+  int[] deltaC;
+  Triangleids[] tri;
+  // Vector3[] skinnedPos;
+  float[] bw;
+  float time = 0;
+
   ComputeBuffer positions;
   ComputeBuffer projectedPositions;
   ComputeBuffer velocities;
+
+  ComputeBuffer deltaPositions;
+  ComputeBuffer deltaPositionsUInt;
+  ComputeBuffer deltaCounter;
+  
   ComputeBuffer boneWeight;
   ComputeBuffer sortedTriangles;
+  ComputeBuffer skinnedMeshPositions;
+  ComputeBuffer skinnedMeshNormals;
 
   // forces
   int ExternalForce;
@@ -126,6 +137,7 @@ public class ClothSimulation : MonoBehaviour
   // constraints
   int DistanceConstraint;
   int BendConstraint;
+  int AverageConstraintDeltas;
   int SelfCollision;
   int UpdatePositions;
   #endregion
@@ -143,20 +155,23 @@ public class ClothSimulation : MonoBehaviour
     InitKernels();
     InitBuffers();
     InitVariables();
+    backSide = _Mesh.CreateBackSide(this.gameObject);
+    backMesh = backSide.GetComponent<SkinnedMeshRenderer>().sharedMesh;
   }
 
   void FixedUpdate()
   {
     UpdateVariables();
-    // DispatchKernels();
-    PBDOnCPU();
+    DispatchKernels();
+    // PBDOnCPU();
     UpdatePositionToMesh();
   }
 
   void OnDestroy()
   {
-    DestroyBuffers();
+    ReleaseBuffers();
     ReloadMeshData();
+    mesh.RecalculateNormals();
   }
   #endregion
 
@@ -192,123 +207,202 @@ public class ClothSimulation : MonoBehaviour
   void InitKernels()
   {
     // forces
-    ExternalForce = solver.FindKernel("ExternalForce");
-    DampVelocities = solver.FindKernel("DampVelocities");
-    ApplyExplicitEuler = solver.FindKernel("ApplyExplicitEuler");
+    ExternalForce = PBDClothSolver.FindKernel("ExternalForce");
+    DampVelocities = PBDClothSolver.FindKernel("DampVelocities");
+    ApplyExplicitEuler = PBDClothSolver.FindKernel("ApplyExplicitEuler");
 
     // collisions
-    MeshCollision = solver.FindKernel("MeshCollision");
-    SphereCollision = solver.FindKernel("SphereCollision");
-    BoxCollision = solver.FindKernel("BoxCollision");
-    CapsuleCollision = solver.FindKernel("CapsuleCollision");
+    MeshCollision = PBDClothSolver.FindKernel("MeshCollision");
+    SphereCollision = PBDClothSolver.FindKernel("SphereCollision");
+    BoxCollision = PBDClothSolver.FindKernel("BoxCollision");
+    CapsuleCollision = PBDClothSolver.FindKernel("CapsuleCollision");
 
     // constraints
-    DistanceConstraint = solver.FindKernel("DistanceConstraint");
-    BendConstraint = solver.FindKernel("BendConstraint");
-    SelfCollision = solver.FindKernel("SelfCollision");
-    UpdatePositions = solver.FindKernel("UpdatePositions");
+    DistanceConstraint = PBDClothSolver.FindKernel("DistanceConstraint");
+    AverageConstraintDeltas = PBDClothSolver.FindKernel("AverageConstraintDeltas");
+    BendConstraint = PBDClothSolver.FindKernel("BendConstraint");
+    SelfCollision = PBDClothSolver.FindKernel("SelfCollision");
+    UpdatePositions = PBDClothSolver.FindKernel("UpdatePositions");
   }
 
   void InitBuffers()
   {
     // strides
-    int strideVector3 = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Vector3));
-    int strideInt = System.Runtime.InteropServices.Marshal.SizeOf(typeof(int));
+    int strideFloat3 = System.Runtime.InteropServices.Marshal.SizeOf(typeof(float)) * 3;
     int strideFloat = System.Runtime.InteropServices.Marshal.SizeOf(typeof(float));
+    int strideInt = System.Runtime.InteropServices.Marshal.SizeOf(typeof(int));
+    int strideUint3 = System.Runtime.InteropServices.Marshal.SizeOf(typeof(uint)) * 3;
     int strideTriangleids = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Triangleids));
 
-    positions = new ComputeBuffer(totalSimulationVerts, strideVector3);
-    projectedPositions = new ComputeBuffer(totalSimulationVerts, strideVector3);
-    velocities = new ComputeBuffer(totalSimulationVerts, strideVector3);
+    positions = new ComputeBuffer(totalSimulationVerts, strideFloat3);
+    projectedPositions = new ComputeBuffer(totalSimulationVerts, strideFloat3);
+    velocities = new ComputeBuffer(totalSimulationVerts, strideFloat3);
+
+    deltaPositions = new ComputeBuffer(totalSimulationVerts, strideFloat3);
+    deltaPositionsUInt = new ComputeBuffer(totalSimulationVerts, strideUint3);
+    deltaCounter = new ComputeBuffer(totalSimulationVerts, strideInt);
+
     boneWeight = new ComputeBuffer(totalSimulationVerts, strideFloat);
-    sortedTriangles = new ComputeBuffer(totalTrianglePoints, strideTriangleids);
+    sortedTriangles = new ComputeBuffer(totalSimulationTriangles, strideTriangleids);
+    skinnedMeshPositions = new ComputeBuffer(skinnedMeshCollider.sharedMesh.vertexCount, strideFloat3);
+    skinnedMeshNormals = new ComputeBuffer(skinnedMeshCollider.sharedMesh.vertexCount, strideFloat3);
 
-    // forces
-    solver.SetBuffer(ExternalForce, "velocities", velocities);
-    solver.SetBuffer(ExternalForce, "boneWeight", boneWeight);
+    // forces------------------------------------------
+    PBDClothSolver.SetBuffer(ExternalForce, "velocities", velocities);
+    PBDClothSolver.SetBuffer(ExternalForce, "boneWeight", boneWeight);
 
-    solver.SetBuffer(DampVelocities, "velocities", velocities);
+    PBDClothSolver.SetBuffer(DampVelocities, "velocities", velocities);
 
-    solver.SetBuffer(ApplyExplicitEuler, "positions", positions);
-    solver.SetBuffer(ApplyExplicitEuler, "projectedPositions", projectedPositions);
-    solver.SetBuffer(ApplyExplicitEuler, "velocities", velocities);
+    PBDClothSolver.SetBuffer(ApplyExplicitEuler, "positions", positions);
+    PBDClothSolver.SetBuffer(ApplyExplicitEuler, "projectedPositions", projectedPositions);
+    PBDClothSolver.SetBuffer(ApplyExplicitEuler, "velocities", velocities);
+    // forces------------------------------------------
 
-    // constraints
-    solver.SetBuffer(DistanceConstraint, "projectedPositions", projectedPositions);
-    solver.SetBuffer(DistanceConstraint, "sortedTriangles", sortedTriangles);
-    solver.SetBuffer(DistanceConstraint, "boneWeight", boneWeight);
+    // constraints-------------------------------------
+    PBDClothSolver.SetBuffer(DistanceConstraint, "projectedPositions", projectedPositions);
+    PBDClothSolver.SetBuffer(DistanceConstraint, "deltaPos", deltaPositions);
+    PBDClothSolver.SetBuffer(DistanceConstraint, "deltaPosAsInt", deltaPositionsUInt);
+    PBDClothSolver.SetBuffer(DistanceConstraint, "deltaCount", deltaCounter);
+    PBDClothSolver.SetBuffer(DistanceConstraint, "boneWeight", boneWeight);
+    PBDClothSolver.SetBuffer(DistanceConstraint, "sortedTriangles", sortedTriangles);
 
-    // apply changes buffers (we just need curr and updated position)
-    solver.SetBuffer(UpdatePositions, "positions", positions);
-    solver.SetBuffer(UpdatePositions, "projectedPositions", projectedPositions);
-    solver.SetBuffer(UpdatePositions, "velocities", velocities);
+    PBDClothSolver.SetBuffer(AverageConstraintDeltas, "projectedPositions", projectedPositions);
+    PBDClothSolver.SetBuffer(AverageConstraintDeltas, "deltaPos", deltaPositions);
+    PBDClothSolver.SetBuffer(AverageConstraintDeltas, "deltaPosAsInt", deltaPositionsUInt);
+    PBDClothSolver.SetBuffer(AverageConstraintDeltas, "deltaCount", deltaCounter);
+
+    PBDClothSolver.SetBuffer(SelfCollision, "projectedPositions", projectedPositions);
+    PBDClothSolver.SetBuffer(SelfCollision, "deltaPos", deltaPositions);
+    PBDClothSolver.SetBuffer(SelfCollision, "deltaPosAsInt", deltaPositionsUInt);
+    PBDClothSolver.SetBuffer(SelfCollision, "deltaCount", deltaCounter);
+    PBDClothSolver.SetBuffer(SelfCollision, "boneWeight", boneWeight);
+
+    PBDClothSolver.SetBuffer(MeshCollision, "positions", positions);
+    PBDClothSolver.SetBuffer(MeshCollision, "velocities", velocities);
+    PBDClothSolver.SetBuffer(MeshCollision, "deltaPos", deltaPositions);
+    PBDClothSolver.SetBuffer(MeshCollision, "deltaPosAsInt", deltaPositionsUInt);
+    PBDClothSolver.SetBuffer(MeshCollision, "deltaCount", deltaCounter);
+    PBDClothSolver.SetBuffer(MeshCollision, "boneWeight", boneWeight);
+    PBDClothSolver.SetBuffer(MeshCollision, "skinnedMeshPositions", skinnedMeshPositions);
+    PBDClothSolver.SetBuffer(MeshCollision, "skinnedMeshNormals", skinnedMeshNormals);
+    // constraints-------------------------------------
+
+    // update positions--------------------------------
+    PBDClothSolver.SetBuffer(UpdatePositions, "positions", positions);
+    PBDClothSolver.SetBuffer(UpdatePositions, "projectedPositions", projectedPositions);
+    PBDClothSolver.SetBuffer(UpdatePositions, "velocities", velocities);
+    // update positions--------------------------------
 
     // set data to buffers
     pos = new Vector3[totalSimulationVerts];
     vel = new Vector3[totalSimulationVerts];
+    deltaP = new Vector3[totalSimulationVerts];
+    deltaPuint = new UInt3Struct[totalSimulationVerts];
+    deltaC = new int[totalSimulationVerts];
     tri = new Triangleids[totalSimulationTriangles];
     bw = new float[totalSimulationVerts];
 
     for (int i=0; i < totalSimulationVerts; i++)
     {
       vel[i] = Vector3.zero;
-      bw[i] = 1;
+      deltaP[i] = Vector3.zero;
+      deltaPuint[i].deltaXInt = 0;
+      deltaPuint[i].deltaYInt = 0;
+      deltaPuint[i].deltaZInt = 0;
+      deltaC[i] = 0;
+      // bw[i] = 1;
+      if (mesh.boneWeights[vertexData.custom2raw[i][0]].boneIndex0 == 5)
+      {
+        bw[i] = 0.0f;
+      } else
+      {
+        bw[i] = 1.0f;
+      }
+      // print(mesh.boneWeights[vertexData.custom2raw[i][0]].weight1);
+      // print(mesh.boneWeights[vertexData.custom2raw[i][0]].weight2);
+      // print(mesh.boneWeights[vertexData.custom2raw[i][0]].weight3);
     }
     bw[0] = 0;
-    bw[10] = 0;
+    // bw[1000] = 0;
     pos = _Convert.FloatListToVector3List(vertexData.position);
-    // pos = _Convert.WoldVector3ListToLocal(transform, pos);
     tri = vertexData.sortedTriangles.ToArray();
+    // skinnedPos = skinnedMeshCollider.sharedMesh.vertices;
 
     positions.SetData(pos);
     projectedPositions.SetData(pos);
     velocities.SetData(vel);
-    sortedTriangles.SetData(tri);
+    deltaPositions.SetData(deltaP);
+    deltaPositionsUInt.SetData(deltaPuint);
+    deltaCounter.SetData(deltaC);
     boneWeight.SetData(bw);
+    sortedTriangles.SetData(tri);
+    skinnedMeshPositions.SetData(skinnedMeshCollider.sharedMesh.vertices);
+    skinnedMeshNormals.SetData(skinnedMeshCollider.sharedMesh.normals);
+    print(skinnedMeshCollider.sharedMesh.normals[0]);
+    print(skinnedMeshCollider.sharedMesh.normals[5]);
+    // print(skinnedMeshCollider.sharedMesh.normals.Length);
+    // print(skinnedMeshCollider.sharedMesh.vertexCount);
   }
 
   void InitVariables()
   {
-    solver.SetFloat("deltaT", 0);
-    solver.SetFloat("time", time);
-    solver.SetVector("gravity", gravity);
-    solver.SetFloat("stiffness", (1 - Mathf.Pow((1 - stiffness), (float)1/iterationSteps)));
-    solver.SetFloat("bendiness", bendiness);
-    solver.SetFloat("collisionRadius", collisionRadius);
+    PBDClothSolver.SetFloat("deltaT", 0);
+    PBDClothSolver.SetFloat("time", time);
+    PBDClothSolver.SetVector("gravity", gravity);
+    PBDClothSolver.SetFloat("stiffness", stiffness);
+    PBDClothSolver.SetFloat("bendiness", bendiness);
+    PBDClothSolver.SetFloat("collisionRadius", collisionRadius);
+    PBDClothSolver.SetFloat("meshCollisionRadius", meshCollisionRadius);
 
-    solver.SetFloat("particleMass", particleMass);
-    solver.SetFloat("particleInvertMass", particleInvertMass);
+    PBDClothSolver.SetFloat("particleMass", particleMass);
+    PBDClothSolver.SetFloat("particleInvertMass", particleInvertMass);
 
-    solver.SetVector("windDirection", windDirection);
-    solver.SetFloat("windStrength", windStrength);
-    solver.SetFloat("windSpeed", windSpeed);
-    solver.SetFloat("turbulence", turbulence);
-    solver.SetFloat("drag", drag);
-    solver.SetFloat("lift", lift);
+    PBDClothSolver.SetVector("windDirection", windDirection);
+    PBDClothSolver.SetFloat("windStrength", windStrength);
+    PBDClothSolver.SetFloat("windSpeed", windSpeed);
+    PBDClothSolver.SetFloat("turbulence", turbulence);
+    PBDClothSolver.SetFloat("drag", drag);
+    PBDClothSolver.SetFloat("lift", lift);
 
-    solver.SetInt("totalSimulationVerts", totalSimulationVerts);
-    solver.SetInt("totalTriangles", totalSimulationTriangles);
-
-    // solver.SetInt("iterationSteps", (int)iterationSteps);
+    PBDClothSolver.SetInt("totalSimulationVerts", totalSimulationVerts);
+    PBDClothSolver.SetInt("totalTriangles", totalSimulationTriangles);
+    PBDClothSolver.SetInt("totalMeshVerts", skinnedMeshCollider.sharedMesh.vertexCount);
   }
 
   void UpdateVariables()
   {
     time += Time.deltaTime;
-    solver.SetFloat("deltaT", Time.deltaTime);
-    solver.SetFloat("time", time);
+    PBDClothSolver.SetFloat("deltaT", 0.01f);
+    PBDClothSolver.SetFloat("time", time);
+    PBDClothSolver.SetVector("gravity", gravity);
+    PBDClothSolver.SetFloat("stiffness", stiffness);
+    PBDClothSolver.SetFloat("meshCollisionRadius", meshCollisionRadius);
+
+    PBDClothSolver.SetVector("windDirection", windDirection);
+    PBDClothSolver.SetFloat("windStrength", windStrength);
+    PBDClothSolver.SetFloat("windSpeed", windSpeed);
+    PBDClothSolver.SetFloat("turbulence", turbulence);
+    PBDClothSolver.SetFloat("drag", drag);
+    PBDClothSolver.SetFloat("lift", lift);
   }
 
   void DispatchKernels()
   {
-    solver.Dispatch(ExternalForce, totalSimulationVerts, 1, 1);
-    solver.Dispatch(DampVelocities, totalSimulationVerts, 1, 1);
-    solver.Dispatch(ApplyExplicitEuler, totalSimulationVerts, 1, 1);
-    // for(int i=0; i < iterationSteps; i++)
-    // {
-    //   solver.Dispatch(DistanceConstraint, totalSimulationTriangles, 1, 1);
-    // }
-    solver.Dispatch(UpdatePositions, totalSimulationVerts, 1, 1);
+    PBDClothSolver.Dispatch(ExternalForce, totalSimulationVerts, 1, 1);
+    PBDClothSolver.Dispatch(DampVelocities, totalSimulationVerts, 1, 1);
+    PBDClothSolver.Dispatch(ApplyExplicitEuler, totalSimulationVerts, 1, 1);
+    // PBDClothSolver.Dispatch(UpdatePositions, totalSimulationVerts, 1, 1);
+    for(int i=0; i < iterationSteps; i++)
+    {
+      PBDClothSolver.Dispatch(DistanceConstraint, totalSimulationTriangles, 1, 1);
+      PBDClothSolver.Dispatch(AverageConstraintDeltas, totalSimulationVerts, 1, 1);
+    }
+    // PBDClothSolver.Dispatch(SelfCollision, totalSimulationVerts, 1, 1);
+    // PBDClothSolver.Dispatch(AverageConstraintDeltas, totalSimulationVerts, 1, 1);
+    // PBDClothSolver.Dispatch(UpdatePositions, totalSimulationVerts, 1, 1);
+    // PBDClothSolver.Dispatch(AverageConstraintDeltas, totalSimulationVerts, 1, 1);
+    PBDClothSolver.Dispatch(UpdatePositions, totalSimulationVerts, 1, 1);
+    PBDClothSolver.Dispatch(MeshCollision, totalSimulationVerts, 1, 1);
     positions.GetData(pos);
   }
 
@@ -317,16 +411,14 @@ public class ClothSimulation : MonoBehaviour
     // gravity
     for (int i=0; i < totalSimulationVerts; i++)
     {
-      if (i!= 0 && i != 10)
-      {
-        vel[i] += gravity * particleInvertMass * Time.deltaTime;
-        pos[i] += vel[i] * Time.deltaTime;
-      }
+      vel[i] += gravity * particleInvertMass * Time.deltaTime * bw[i];
+      pos[i] += vel[i] * Time.deltaTime;
     }
     Vector3 BinaryDistanceConstraint(Vector3 pI, Vector3 pJ, float wI, float wJ, float restd)
     {
       // returns where pI should go
-      return (wI/(wI + wJ)) * ((pI - pJ).magnitude - restd) * Vector3.Normalize(pJ-pI);
+      if (wI == 0) return Vector3.zero;
+      else return (wI/(wI + wJ)) * (Vector3.Distance(pI, pJ) - restd) * Vector3.Normalize(pJ-pI);
     }
 
     for (int _i=0; _i < iterationSteps; _i++)
@@ -400,15 +492,24 @@ public class ClothSimulation : MonoBehaviour
       }
     }
     mesh.vertices = verts;
+    mesh.RecalculateNormals();
+    
+    backMesh.vertices = verts;
+    backMesh.normals = _Mesh.ReverseNormals(mesh.normals);
   }
 
-  void DestroyBuffers()
+  void ReleaseBuffers()
   {
-    positions.Release();
-    projectedPositions.Release();
-    velocities.Release();
-    sortedTriangles.Release();
-    boneWeight.Release();
+    if (positions != null) positions.Release();
+    if (projectedPositions != null) projectedPositions.Release();
+    if (velocities != null) velocities.Release();
+    if (deltaPositions != null) deltaPositions.Release();
+    if (deltaPositionsUInt != null) deltaPositionsUInt.Release();
+    if (deltaCounter != null) deltaCounter.Release();
+    if (sortedTriangles != null) sortedTriangles.Release();
+    if (boneWeight != null) boneWeight.Release();
+    if (skinnedMeshPositions != null) skinnedMeshPositions.Release();
+    if (skinnedMeshNormals != null) skinnedMeshNormals.Release();
   }
   #endregion
 
