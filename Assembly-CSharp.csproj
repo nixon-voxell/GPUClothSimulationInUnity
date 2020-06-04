@@ -36,11 +36,15 @@
     <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
   </PropertyGroup>
   <ItemGroup>
-     <Compile Include="Assets\Simulations\ClothSimulation.cs" />
-     <Compile Include="Assets\Simulations\ConditionalHideAttribute.cs" />
-     <Compile Include="Assets\Simulations\Helper.cs" />
+     <Compile Include="Assets\Scripts\Simulations\ClothSimulation.cs" />
+     <Compile Include="Assets\Scripts\UtilityTools\ConditionalHideAttribute.cs" />
+     <Compile Include="Assets\Scripts\UtilityTools\FPSDisplay.cs" />
+     <Compile Include="Assets\Scripts\UtilityTools\Helper.cs" />
+     <Compile Include="Assets\Scripts\UtilityTools\SkinnedMesh.cs" />
+     <Compile Include="Assets\Scripts\UtilityTools\SkinnedMeshDebug.cs" />
+     <None Include="Assets\Materials\Invisible\Invisible.shader" />
      <None Include="Assets\JsonDotNet\link.xml" />
-     <None Include="Assets\Simulations\PBD.compute" />
+     <None Include="Assets\Scripts\Simulations\PBDClothSolver.compute" />
     <Reference Include="UnityEngine">
         <HintPath>C:/Program Files/Unity/Hub/Editor/2019.3.15f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
     </Reference>
@@ -607,6 +611,12 @@
     </Reference>
     <Reference Include="UnityEditor.UI">
         <HintPath>D:/Nyx/SharedFolders/ClothSimulationWithComputeShader/Library/ScriptAssemblies/UnityEditor.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Postprocessing.Editor">
+        <HintPath>D:/Nyx/SharedFolders/ClothSimulationWithComputeShader/Library/ScriptAssemblies/Unity.Postprocessing.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Postprocessing.Runtime">
+        <HintPath>D:/Nyx/SharedFolders/ClothSimulationWithComputeShader/Library/ScriptAssemblies/Unity.Postprocessing.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

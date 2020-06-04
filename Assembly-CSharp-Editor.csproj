@@ -37,6 +37,7 @@
   </PropertyGroup>
   <ItemGroup>
      <Compile Include="Assets\Editor\ClothSimulationEditor.cs" />
+     <Compile Include="Assets\Editor\UtilityTools\ConditionalHidePropertyDrawer.cs" />
     <Reference Include="UnityEngine">
         <HintPath>C:/Program Files/Unity/Hub/Editor/2019.3.15f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
     </Reference>
@@ -621,6 +622,12 @@
     </Reference>
     <Reference Include="UnityEditor.UI">
         <HintPath>D:/Nyx/SharedFolders/ClothSimulationWithComputeShader/Library/ScriptAssemblies/UnityEditor.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Postprocessing.Editor">
+        <HintPath>D:/Nyx/SharedFolders/ClothSimulationWithComputeShader/Library/ScriptAssemblies/Unity.Postprocessing.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Postprocessing.Runtime">
+        <HintPath>D:/Nyx/SharedFolders/ClothSimulationWithComputeShader/Library/ScriptAssemblies/Unity.Postprocessing.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
