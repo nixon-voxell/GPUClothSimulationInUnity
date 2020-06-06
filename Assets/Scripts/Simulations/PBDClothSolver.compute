@@ -21,6 +21,7 @@ half bendingStiffness;
 half restAngle;
 half collisionRadius;
 half meshCollisionRadius;
+half meshDampRadius;
 
 float particleMass;
 float particleInvertMass;
@@ -104,6 +105,14 @@ float3 BinaryDistanceConstraint(float3 pI, float3 pJ, float wI, float wJ, float 
   if (wI == 0) return float3(0, 0, 0);
   else return (wI/(wI + wJ)) * (distance(pI, pJ) - restd) * normalize(pJ-pI) * stiffness;
 }
+
+float RemapFloat(float start, float end, float newStart, float newEnd, float val)
+{
+  float originalDiff = end - start;
+  float newDiff = newEnd - newStart;
+  float percentage = val/originalDiff;
+  return percentage * newDiff + newStart;
+}
 // helper functions-------------------------------
 
 // forces-----------------------------------------
@@ -152,13 +161,20 @@ void MeshCollision (uint3 id : SV_DispatchThreadID)
   uint idx = id.x;
 
   float3 A = positions[idx];
+  float3 vA = velocities[idx];
   for (uint i=0; i < totalMeshVerts; i++)
   {
     float3 B = skinnedMeshPositions[i];
-    if (distance(A, B) < meshCollisionRadius)
+    float3 nB = skinnedMeshNormals[i];
+    float dist = distance(A, B);
+    if (dist < meshDampRadius)
     {
-      float3 d = (meshCollisionRadius - distance(A, B))/meshCollisionRadius * normalize(skinnedMeshNormals[i]) * boneWeight[idx];
-      velocities[idx] = d * length(gravity);
+      float direction = dot(vA, nB);
+      direction = direction < 0 ? -direction : direction;
+      float ratio = (meshDampRadius - dist + meshCollisionRadius)/meshDampRadius;
+      // float3 r = (2 * direction * nB - vA) * ratio;
+      float3 r = nB * ratio * length(vA) * 2;
+      velocities[idx] = r * boneWeight[idx];
     }
   }
 }

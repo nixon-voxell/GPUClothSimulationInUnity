@@ -14,25 +14,12 @@ public class SkinnedMeshDebug : MonoBehaviour
   void DrawVertices(SkinnedMesh mesh)
   {
     Color color = Color.green;
-    if (mesh.useBakeMesh)
+    var m = transform.localToWorldMatrix;
+    for (int i = 0; i < mesh.vertexCount; i++)
     {
-      var m = transform.localToWorldMatrix;
-      for (int i = 0; i < mesh.vertexCount; i++)
-      {
-        Vector3 position =  mesh.bakedVertices[i];
-        Vector3 normal = mesh.bakedNormals[i];
-        Debug.DrawLine(position, position + (normal * normalLength), color);
-      }
+      Vector3 position =  mesh.bakedVertices[i];
+      Vector3 normal = mesh.bakedNormals[i];
+      Debug.DrawLine(position, position + (normal * normalLength), color);
     }
-    else
-    {
-      for (int i = 0; i < mesh.vertexCount; i++)
-      {
-        Vector3 position = mesh.vertices[i];
-        Vector3 normal = mesh.normals[i];
-        Debug.DrawLine(position, position + (normal * normalLength), color);
-      }
-    }
-     
   }
 }
