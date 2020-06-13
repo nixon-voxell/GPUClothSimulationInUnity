@@ -36,6 +36,7 @@ half lift;
 uint totalSimulationVerts;
 uint totalSimulationTriangles;
 uint totalMeshVerts;
+uint totalSphereColliders;
 
 RWStructuredBuffer<float3> positions;
 RWStructuredBuffer<float3> projectedPositions;
@@ -48,8 +49,13 @@ RWStructuredBuffer<int> deltaCount;
 StructuredBuffer<float> boneWeight;
 
 StructuredBuffer<Triangleids> sortedTriangles;
-StructuredBuffer<float3> skinnedMeshPositions;
+RWStructuredBuffer<float3> skinnedMeshPositions;
+StructuredBuffer<float3> projectedSkinnedMeshPositions;
 StructuredBuffer<float3> skinnedMeshNormals;
+
+RWStructuredBuffer<float3> sphereColliderPositions;
+StructuredBuffer<float3> projectedSphereColliderPositions;
+StructuredBuffer<float> sphereColliderRadius;
 
 // helper functions-------------------------------
 float2 unity_gradientNoise_dir(float2 p)
@@ -99,13 +105,6 @@ void AtomicAddDelta(int indexIntoDeltaPos, float newDeltaVal, int axis)
   return;
 }
 
-float3 BinaryDistanceConstraint(float3 pI, float3 pJ, float wI, float wJ, float restd)
-{
-  // returns where pI should go
-  if (wI == 0) return float3(0, 0, 0);
-  else return (wI/(wI + wJ)) * (distance(pI, pJ) - restd) * normalize(pJ-pI) * stiffness;
-}
-
 float RemapFloat(float start, float end, float newStart, float newEnd, float val)
 {
   float originalDiff = end - start;
@@ -115,9 +114,11 @@ float RemapFloat(float start, float end, float newStart, float newEnd, float val
 }
 // helper functions-------------------------------
 
+#define Threads_8 [numthreads(8, 1, 1)]
+
 // forces-----------------------------------------
 #pragma kernel ExternalForce
-[numthreads(8, 1, 1)]
+Threads_8
 void ExternalForce (uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
@@ -134,7 +135,7 @@ void ExternalForce (uint3 id : SV_DispatchThreadID)
 }
 
 #pragma kernel DampVelocities
-[numthreads(8, 1, 1)]
+Threads_8
 void DampVelocities(uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
@@ -144,7 +145,7 @@ void DampVelocities(uint3 id : SV_DispatchThreadID)
 }
 
 #pragma kernel ApplyExplicitEuler
-[numthreads(8, 1, 1)]
+Threads_8
 void ApplyExplicitEuler(uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
@@ -155,7 +156,7 @@ void ApplyExplicitEuler(uint3 id : SV_DispatchThreadID)
 
 // collisions-------------------------------------
 #pragma kernel MeshCollision
-[numthreads(8, 1, 1)]
+Threads_8
 void MeshCollision (uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
@@ -165,29 +166,52 @@ void MeshCollision (uint3 id : SV_DispatchThreadID)
   for (uint i=0; i < totalMeshVerts; i++)
   {
     float3 B = skinnedMeshPositions[i];
+    float3 pB = projectedSkinnedMeshPositions[i];
     float3 nB = skinnedMeshNormals[i];
-    float dist = distance(A, B);
+    float3 vB = (pB - B) / deltaT;
+    float dist = distance(A, pB);
     if (dist < meshDampRadius)
     {
-      float direction = dot(vA, nB);
-      direction = direction < 0 ? -direction : direction;
+      float velDir = dot(vA, nB);
+      velDir = velDir < 0 ? 0 : velDir;
       float ratio = (meshDampRadius - dist + meshCollisionRadius)/meshDampRadius;
-      // float3 r = (2 * direction * nB - vA) * ratio;
-      float3 r = nB * ratio * length(vA) * 2;
-      velocities[idx] = r * boneWeight[idx];
+      // float3 r = ((2 * velDir * nB - vA) * ratio) + (vB * velDir);
+      float3 finalVel = (nB * ratio * length(vA) * 2) + (vB * velDir);
+      velocities[idx] = finalVel * boneWeight[idx];
     }
   }
 }
 
 #pragma kernel SphereCollision
-[numthreads(8, 1, 1)]
+Threads_8
 void SphereCollision (uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
+
+  float3 A = positions[idx];
+  float3 vA = velocities[idx];
+
+  for (uint i=0; i < totalSphereColliders; i++)
+  {
+    float3 B = sphereColliderPositions[i];
+    float3 pB = projectedSphereColliderPositions[i];
+    float3 vB = (pB - B) / deltaT;
+    float rB = sphereColliderRadius[i];
+    float3 n = pB - A;
+    float dist = length(n);
+    n = normalize(n);
+    if (dist < rB)
+    {
+      float velDir = dot(vA, n);
+      velDir = velDir < 0 ? 0 : velDir;
+      float3 finalVel = (vB * velDir) + (n * length(vA));
+      velocities[idx] = finalVel * boneWeight[idx];
+    }
+  }
 }
 
 #pragma kernel CapsuleCollision
-[numthreads(8, 1, 1)]
+Threads_8
 void CapsuleCollision (uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
@@ -200,7 +224,7 @@ bool IsPointInCube(float3 position, float3 extent)
 }
 
 #pragma kernel BoxCollision
-[numthreads(8, 1, 1)]
+Threads_8
 void BoxCollision (uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
@@ -243,8 +267,15 @@ void BoxCollision (uint3 id : SV_DispatchThreadID)
 // collisions-------------------------------------
 
 // constraints------------------------------------
+float3 BinaryDistanceConstraint(float3 pi, float3 pj, float wi, float wj, float restd)
+{
+  // returns where pi should go
+  if (wi == 0) return float3(0, 0, 0);
+  else return (wi/(wi + wj)) * (distance(pi, pj) - restd) * normalize(pj - pi) * stiffness;
+}
+
 #pragma kernel DistanceConstraint
-[numthreads(8, 1, 1)]
+Threads_8
 void DistanceConstraint (uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
@@ -269,6 +300,11 @@ void DistanceConstraint (uint3 id : SV_DispatchThreadID)
   float wB = particleInvertMass * boneWeight[idxB];
   float wC = particleInvertMass * boneWeight[idxC];
 
+  // atomic add the number of constraints to deltaCount buffer
+  InterlockedAdd(deltaCount[idxA], 1);
+  InterlockedAdd(deltaCount[idxB], 1);
+  InterlockedAdd(deltaCount[idxC], 1);
+
   // apply constraint and get displacement of position
   float3 dA = BinaryDistanceConstraint(A, B, wA, wB, AB);
   dA += BinaryDistanceConstraint(A, C, wA, wC, CA);
@@ -278,11 +314,6 @@ void DistanceConstraint (uint3 id : SV_DispatchThreadID)
 
   float3 dC = BinaryDistanceConstraint(C, A, wC, wA, CA);
   dC += BinaryDistanceConstraint(C, B, wC, wB, BC);
-
-  // atomic add the number of constraints to deltaCount buffer
-  InterlockedAdd(deltaCount[idxA], 1);
-  InterlockedAdd(deltaCount[idxB], 1);
-  InterlockedAdd(deltaCount[idxC], 1);
 
   AtomicAddDelta(idxA, dA.x, 0);
   AtomicAddDelta(idxA, dA.y, 1);
@@ -295,18 +326,10 @@ void DistanceConstraint (uint3 id : SV_DispatchThreadID)
   AtomicAddDelta(idxC, dC.x, 0);
   AtomicAddDelta(idxC, dC.y, 1);
   AtomicAddDelta(idxC, dC.z, 2);
-
-  // A += dA * stiffness;
-  // B += dB * stiffness;
-  // C += dC * stiffness;
-  
-  // projectedPositions[idxA] = A;
-  // projectedPositions[idxB] = B;
-  // projectedPositions[idxC] = C;
 }
 
 #pragma kernel BendConstraint
-[numthreads(8, 1, 1)]
+Threads_8
 void BendConstraint (uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
@@ -393,9 +416,11 @@ void BendConstraint (uint3 id : SV_DispatchThreadID)
 }
 
 #pragma kernel AverageConstraintDeltas
-[numthreads(8, 1, 1)]
-void AverageConstraintDeltas(uint3 id : SV_DispatchThreadID){
+Threads_8
+void AverageConstraintDeltas(uint3 id : SV_DispatchThreadID)
+{
   uint idx = id.x;
+  if (idx >= totalMeshVerts) return;
 
   if (deltaCount[idx] > 0)
   {
@@ -405,8 +430,7 @@ void AverageConstraintDeltas(uint3 id : SV_DispatchThreadID){
 
     deltaPos[idx] /= deltaCount[idx];
   }
-
-  projectedPositions[idx] += deltaPos[idx] * 1.5;
+  projectedPositions[idx] += deltaPos[idx];
 
   // reset delta buffers to zero
   deltaPos[idx] = float3(0, 0, 0);
@@ -415,7 +439,7 @@ void AverageConstraintDeltas(uint3 id : SV_DispatchThreadID){
 }
 
 #pragma kernel SelfCollision
-[numthreads(8, 1, 1)]
+Threads_8
 void SelfCollision (uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
@@ -443,12 +467,30 @@ void SelfCollision (uint3 id : SV_DispatchThreadID)
 
 // update positions-------------------------------
 #pragma kernel UpdatePositions
-[numthreads(8, 1, 1)]
+Threads_8
 void UpdatePositions (uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
 
   velocities[idx] = (projectedPositions[idx] - positions[idx]) / deltaT;
   positions[idx] = projectedPositions[idx];
+}
+
+#pragma kernel UpdateSkinnedMeshPositions
+Threads_8
+void UpdateSkinnedMeshPositions (uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+
+  skinnedMeshPositions[idx] = projectedSkinnedMeshPositions[idx];
+}
+
+#pragma kernel UpdateSphereColliderPositions
+Threads_8
+void UpdateSphereColliderPositions (uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+
+  sphereColliderPositions[idx] = projectedSphereColliderPositions[idx];
 }
 // update positions-------------------------------

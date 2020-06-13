@@ -29,12 +29,27 @@ public class SkinnedMesh : MonoBehaviour
   public System.Action<SkinnedMesh> OnResultsReady;
 
   public float bakedScale = 1f;
-  public bool transformBaked = true;
+  public bool transformBaked = false;
+  // public bool independentScript = false;
 
   #region Editor Stuffs
   [HideInInspector]
   public bool hide = false;
   #endregion
+
+  // #region UnityCallbacks
+  // void Start()
+  // {
+  //   if (independentScript)
+  //   Init();
+  // }
+
+  // void LateUpdate()
+  // {
+  //   if (independentScript)
+  //   BakeMeshData();
+  // }
+  // #endregion
 
   public void Init()
   {
@@ -42,12 +57,9 @@ public class SkinnedMesh : MonoBehaviour
     mesh = skin.sharedMesh;
     vertexCount = mesh.vertexCount;
     tempMesh = new Mesh();
+    tempMesh.MarkDynamic();
     //Debug.LogError("Don't use this class, use skin.BakeMesh()");
   }
-
-  // void FixedUpdate() {
-  //   BakeMeshData();
-  // }
 
   public void BakeMeshData()
   {

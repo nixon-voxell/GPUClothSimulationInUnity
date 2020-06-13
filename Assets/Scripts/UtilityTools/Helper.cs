@@ -22,10 +22,8 @@ namespace Helper
 
   public struct VertexData
   {
-    public List<float[]> position;
-    public Dictionary<int, List<int>> custom2raw;
-    public Dictionary<int, int> raw2custom;
-    public List<Triangleids> sortedTriangles;
+    public float[][] positions;
+    public Triangleids[] sortedTriangles;
   }
 
   public struct UInt3Struct
@@ -57,16 +55,40 @@ namespace Helper
       }
     }
 
-    public static Vector3[] FloatListToVector3List(List<float[]> fltList)
+    public static Vector3[] FloatArrayToVector3Array(float[][] fltArray)
     {
-      Vector3[] vc3List = new Vector3[fltList.Count];
-
-      for (int i=0; i < fltList.Count; i++)
+      if (fltArray != null)
       {
-        vc3List[i] = FloatToVector3(fltList[i]);
-      }
+        Vector3[] vc3Array = new Vector3[fltArray.Length];
 
-      return vc3List;
+        for (int i=0; i < fltArray.Length; i++)
+        {
+          vc3Array[i] = FloatToVector3(fltArray[i]);
+        }
+
+        return vc3Array;
+      } else
+      {
+        return new Vector3[0];
+      }
+    }
+
+    public static float[][] Vector3ArrayToFloatArray(Vector3[] vc3Array)
+    {
+      if (vc3Array != null)
+      {
+        float[][] fltArray = new float[vc3Array.Length][];
+
+        for (int i=0; i < vc3Array.Length; i++)
+        {
+          fltArray[i] = Vector3ToFloat(vc3Array[i]);
+        }
+
+        return fltArray;
+      } else
+      {
+        return new float[0][];
+      }
     }
 
     public static Vector3[] LocalVector3ListToWold(Transform transform, Vector3[] vc3List)
@@ -136,79 +158,43 @@ namespace Helper
   public class _Vertex
   {
 
-    public static VertexData SortVerticesByPosition(int totalV, Vector3[] v)
-    {
-      VertexData vd = new VertexData();
-      vd.position = new List<float[]>();
-      vd.custom2raw = new Dictionary<int, List<int>>();
-      vd.raw2custom = new Dictionary<int, int>();
-
-      // sort the vertices
-      for (int i=0; i < totalV; i++)
-      {
-        float[] vertFloats = _Convert.Vector3ToFloat(v[i]);
-        int element = 0;
-        if (!_Check.ListContainsFloatArray(vd.position, vertFloats, out element))
-        {
-          vd.position.Add(vertFloats);
-          vd.custom2raw.Add(element, new List<int>());
-        }
-        vd.custom2raw[element].Add(i);
-      }
-
-      // used sorted vertices to populate raw2custom
-      for (int i=0; i < vd.custom2raw.Count; i++)
-      {
-        foreach (int id in vd.custom2raw[i])
-        {
-          vd.raw2custom[id] = i;
-        }
-      }
-      return vd;
-    }
-
     public static VertexData SortTrianglesByGrp(int[] tri, int totalTrianglePoints, VertexData vd)
     {
-      vd.sortedTriangles = new List<Triangleids>();
-
-      for (int i=0; i < totalTrianglePoints; i+=3)
+      if (totalTrianglePoints % 3 == 0)
       {
-        Triangleids t = new Triangleids();
-        t.A = vd.raw2custom[tri[i]];
-        t.B = vd.raw2custom[tri[i+1]];
-        t.C = vd.raw2custom[tri[i+2]];
+        vd.sortedTriangles = new Triangleids[totalTrianglePoints/3];
 
-        t.AB = CalculateCustomidDistance(t.A, t.B, vd);
-        t.BC = CalculateCustomidDistance(t.B, t.C, vd);
-        t.CA = CalculateCustomidDistance(t.C, t.A, vd);
-        vd.sortedTriangles.Add(t);
+        for (int i=0; i < totalTrianglePoints; i+=3)
+        {
+          Triangleids t = new Triangleids();
+          t.A = tri[i];
+          t.B = tri[i+1];
+          t.C = tri[i+2];
+
+          t.AB = CalculateCustomidDistance(t.A, t.B, vd);
+          t.BC = CalculateCustomidDistance(t.B, t.C, vd);
+          t.CA = CalculateCustomidDistance(t.C, t.A, vd);
+          vd.sortedTriangles[i/3] = (t);
+        }
       }
       return vd;
     }
 
-    public static void InitRawMesh(Mesh mesh, out Vector3[] verts, out int totalVerts, out int[] triangles, out int totalTrianglePoints)
+    public static void InitRawMesh(Mesh mesh, out int totalVerts, out int totalTrianglePoints)
     {
-      verts = mesh.vertices;
-      totalVerts = (int)verts.Length;
-      triangles = mesh.triangles;
-      totalTrianglePoints = (int)triangles.Length;
+      totalVerts = mesh.vertexCount;
+      totalTrianglePoints = mesh.triangles.Length;
     }
 
-    public static void ResetMeshData(VertexData vd, Vector3[] verts, Mesh mesh)
+    public static void ResetMeshData(float[][] positions, Mesh mesh)
     {
-      for (int i=0; i < vd.custom2raw.Count; i++)
-      {
-        foreach (int id in vd.custom2raw[(int)i])
-        {
-          verts[id] = _Convert.FloatToVector3(vd.position[i]);
-        }
-      }
-      mesh.vertices = verts;
+      mesh.vertices = _Convert.FloatArrayToVector3Array(positions);
+      mesh.RecalculateNormals();
     }
 
     public static float CalculateCustomidDistance(int id1, int id2, VertexData vd)
     {
-      return Vector3.Distance(_Convert.FloatToVector3(vd.position[id1]), _Convert.FloatToVector3(vd.position[id2]));
+      return Vector3.Distance(_Convert.FloatToVector3(vd.positions[id1]), _Convert.FloatToVector3(vd.positions[id2]));
     }
 
     #region Saving and Loading
@@ -308,6 +294,58 @@ namespace Helper
         reverseNormals[i] *= -1;
       }
       return reverseNormals;
+    }
+
+    public static void AutoWeld(Mesh mesh, float threshold)
+    {
+      Vector3[] verts = mesh.vertices;
+      BoneWeight[] boneWeights = mesh.boneWeights;
+      
+      // Build new vertex buffer and remove "duplicate" verticies
+      // that are within the given threshold.
+      List<Vector3> newVerts = new List<Vector3>();
+      List<BoneWeight> newBoneWeights = new List<BoneWeight>();
+      List<Vector2> newUVs = new List<Vector2>();
+      
+      int k = 0;
+      
+      for (int i=0; i < mesh.vertexCount; i++)
+      {
+        // Has vertex already been added to newVerts list?
+        foreach (Vector3 newVert in newVerts)
+          if (Vector3.Distance(newVert, verts[i]) <= threshold) goto skipToNext;
+        // Accept new vertex!
+        newVerts.Add(verts[i]);
+        newBoneWeights.Add(boneWeights[i]);
+        newUVs.Add(mesh.uv[k]);
+
+        skipToNext:;
+        ++k;
+      }
+      
+      // Rebuild triangles using new verticies
+      int[] tris = mesh.triangles;
+      for (int i = 0; i < tris.Length; ++i)
+      {
+        // Find new vertex point from buffer
+        for (int j = 0; j < newVerts.Count; ++j)
+        {
+          if (Vector3.Distance(newVerts[j], verts[ tris[i] ]) <= threshold)
+          {
+            tris[i] = j;
+            break;
+          }
+        }
+      }
+      
+      // Update mesh!
+      mesh.Clear();
+      mesh.vertices = newVerts.ToArray();
+      mesh.triangles = tris;
+      mesh.boneWeights = newBoneWeights.ToArray();
+      mesh.uv = newUVs.ToArray();
+      mesh.RecalculateNormals();
+      mesh.RecalculateBounds();
     }
 
   }

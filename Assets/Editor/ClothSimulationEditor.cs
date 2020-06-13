@@ -17,9 +17,7 @@ class ClothSimulationEditor : Editor {
     clothSim.particleInvertMass = 1 / clothSim.particleMass;
 
     _Vertex.InitRawMesh(clothSim.mesh,
-    out clothSim.verts,
     out clothSim.totalVerts,
-    out clothSim.triangles,
     out clothSim.totalTrianglePoints);
 
 
