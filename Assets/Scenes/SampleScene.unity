@@ -148,6 +148,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7271325077127147254, guid: 77b9eda70134cf24a82290bc735ab5ad,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: -6786167242665688491, guid: 77b9eda70134cf24a82290bc735ab5ad,
         type: 3}
       propertyPath: m_IsActive
@@ -228,6 +233,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -3936160676013801454, guid: 77b9eda70134cf24a82290bc735ab5ad,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: -3643364683546005873, guid: 77b9eda70134cf24a82290bc735ab5ad,
         type: 3}
       propertyPath: m_IsActive
@@ -237,6 +247,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -2606217863934893458, guid: 77b9eda70134cf24a82290bc735ab5ad,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -2313512148390094158, guid: 77b9eda70134cf24a82290bc735ab5ad,
         type: 3}
@@ -277,6 +292,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5133913965574556032, guid: 77b9eda70134cf24a82290bc735ab5ad,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6735834016508735834, guid: 77b9eda70134cf24a82290bc735ab5ad,
         type: 3}
@@ -326,8 +346,8 @@ MonoBehaviour:
   drag: 0.01
   lift: 0.1
   skinnedMeshCollider: {fileID: 29915524}
-  meshCollisionRadius: 0.018
-  meshDampRadius: 0.022
+  meshCollisionRadius: 0.02
+  meshDampRadius: 0.03
   SphereColliders: []
   BoxColliders: []
   CapsuleColliders: []
