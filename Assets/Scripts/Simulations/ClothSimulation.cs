@@ -305,7 +305,7 @@ public class ClothSimulation : MonoBehaviour
       // print(mesh.boneWeights[vertexData.custom2raw[i][0]].weight3);
     }
     // print(bw[0]);
-    // bw[0] = 0;
+    bw[0] = 0;
     // bw[1000] = 0;
     pos = _Convert.FloatArrayToVector3Array(vertexData.positions);
     tri = vertexData.sortedTriangles.ToArray();
