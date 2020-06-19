@@ -20,10 +20,19 @@ namespace Helper
     public float CA;
   }
 
+  public struct NeighborTriangleids
+  {
+    public int A;
+    public int B;
+    public int C;
+    public int D;
+  }
+
   public struct VertexData
   {
     public float[][] positions;
     public Triangleids[] sortedTriangles;
+    public NeighborTriangleids[] neighborTriangles;
   }
 
   public struct UInt3Struct
@@ -31,6 +40,42 @@ namespace Helper
     public uint deltaXInt;
     public uint deltaYInt;
     public uint deltaZInt;
+  }
+
+  public class Edge
+  {
+    public int startIndex;
+    public int endIndex;
+
+    public Edge(int start, int end) {
+      startIndex = Mathf.Min(start, end);
+      endIndex = Mathf.Max(start, end);
+    }
+  }
+
+  public class Triangle
+  {
+    public int[] vertices;
+
+    public Triangle(int v0, int v1, int v2) {
+      vertices = new int[3];
+      vertices[0] = v0;
+      vertices[1] = v1;
+      vertices[2] = v2;
+    }
+  }
+
+  public class EdgeComparer : EqualityComparer<Edge>
+  {
+    public override int GetHashCode(Edge obj)
+    {
+      return obj.startIndex * 10000 + obj.endIndex;
+    }
+
+    public override bool Equals(Edge x, Edge y)
+    {
+      return x.startIndex == y.startIndex && x.endIndex == y.endIndex;
+    }
   }
 
   #endregion
@@ -157,6 +202,106 @@ namespace Helper
 
   public class _Vertex
   {
+
+    public static VertexData SortTrianglesByNeighbor(Triangleids[] sortedTriangles, VertexData vd)
+    {
+      Dictionary<Edge, List<Triangle>> wingEdges = new Dictionary<Edge, List<Triangle>>(new EdgeComparer());
+
+      // map edges to all of the faces to which they are connected
+      foreach (Triangleids sortTri in sortedTriangles)
+      {
+        Triangle tri = new Triangle(sortTri.A, sortTri.B, sortTri.C);
+        Edge e1 = new Edge(tri.vertices[0], tri.vertices[1]);
+        if (wingEdges.ContainsKey(e1) && !wingEdges[e1].Contains(tri)) wingEdges[e1].Add(tri);
+        else
+        {
+          List<Triangle> tris = new List<Triangle>();
+          tris.Add(tri);
+          wingEdges.Add(e1, tris);
+        }
+
+        Edge e2 = new Edge(tri.vertices[0], tri.vertices[2]);
+        if (wingEdges.ContainsKey(e2) && !wingEdges[e2].Contains(tri)) wingEdges[e2].Add(tri);
+        else
+        {
+          List<Triangle> tris = new List<Triangle>();
+          tris.Add(tri);
+          wingEdges.Add(e2, tris);
+        }
+
+        Edge e3 = new Edge(tri.vertices[1], tri.vertices[2]);
+        if (wingEdges.ContainsKey(e3) && !wingEdges[e3].Contains(tri)) wingEdges[e3].Add(tri);
+        else
+        {
+          List<Triangle> tris = new List<Triangle>();
+          tris.Add(tri);
+          wingEdges.Add(e3, tris);
+        }
+      }
+
+      // wingEdges are edges with 2 occurences,
+      // so we need to remove the lower frequency ones
+      List<Edge> keyList = wingEdges.Keys.ToList();
+      foreach (Edge e in keyList)
+      {
+        if (wingEdges[e].Count < 2) wingEdges.Remove(e);
+        // if (wingEdges[e].Count > 2) Debug.Log(wingEdges[e].Count);
+      }
+
+      vd.neighborTriangles = new NeighborTriangleids[wingEdges.Count];
+      int j = 0;
+      foreach (Edge wingEdge in wingEdges.Keys)
+      {
+        /* wingEdges are indexed like in the Bridson,
+        * Simulation of Clothing with Folds and Wrinkles paper
+        *  3
+        *  ^
+        * 0  |  1
+        *  2
+        */
+
+        int[] indices = new int[4];
+        indices[2] = wingEdge.startIndex;
+        indices[3] = wingEdge.endIndex;
+
+        int b = 0;
+        foreach (Triangle tri in wingEdges[wingEdge])
+        {
+          for (int i = 0; i < 3; i++)
+          {
+            int point = tri.vertices[i];
+            if (point != indices[2] && point != indices[3])
+            {
+              if (b == 0)
+              {
+                //tri #1
+                indices[0] = point;
+                break;
+              } else if (b == 1)
+              {
+                //tri #2
+                indices[1] = point;
+                break;
+              }
+            }
+          }
+          b++;
+        }
+
+        vd.neighborTriangles[j].A = indices[0];
+        vd.neighborTriangles[j].B = indices[1];
+        vd.neighborTriangles[j].C = indices[2];
+        vd.neighborTriangles[j].D = indices[3];
+        Vector3 p0 = _Convert.FloatToVector3(vd.positions[indices[0]]);
+        Vector3 p1 = _Convert.FloatToVector3(vd.positions[indices[1]]);
+        Vector3 p2 = _Convert.FloatToVector3(vd.positions[indices[2]]); 
+        Vector3 p3 = _Convert.FloatToVector3(vd.positions[indices[3]]);
+
+        j++;
+      }
+
+      return vd;
+    }
 
     public static VertexData SortTrianglesByGrp(int[] tri, int totalTrianglePoints, VertexData vd)
     {

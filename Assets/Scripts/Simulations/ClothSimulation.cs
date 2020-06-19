@@ -13,13 +13,16 @@ public class ClothSimulation : MonoBehaviour
   #region Mesh Data
   [Header("Mesh Data")]
   [ConditionalHideAttribute("hide")]
+  [Tooltip("Make sure that your mesh is Read/Write enabled!")]
   public Mesh mesh;
   [ConditionalHideAttribute("hide")]
   public int totalVerts;
   [ConditionalHideAttribute("hide")]
   public int totalTrianglePoints;
   [ConditionalHideAttribute("hide")]
-  public int totalTris;
+  public int totalTriangles;
+  [ConditionalHideAttribute("hide")]
+  public int totalTriangleNeighbors;
 
   // [HideInInspector]
   // public Vector3[] verts;
@@ -43,24 +46,32 @@ public class ClothSimulation : MonoBehaviour
   public uint iterationSteps = 2;
   [Tooltip("This should be higher than iteration steps.")]
   public uint subSteps = 10;
-  [Tooltip("Constant acceleration on all particles.")]
-  public Vector3 gravity = new Vector3(0, -9.81f, 0);
-  [Range(0, 1)]
-  public float damping = 0.1f;
-  [Range(0.1f, 1)]
-  public float stiffness = 0.9f;
-  [Range(0, 1)]
-  public float bendiness = 0.85f;
-  [Range(0, 1)]
-  public float bendingStiffness = 0.9f;
-  // public float restAngle = ;
-  public float collisionRadius = 0.02f;
-
   [Tooltip("Mass of each particle representing each vertices.")]
   public float particleMass = 0.01f;
   [ConditionalHideAttribute("hide")]
   [Tooltip("1/particle mass")]
   public float particleInvertMass;
+  #endregion
+
+  #region External Force
+  [Header("External Force")]
+  [Tooltip("Constant acceleration on all particles.")]
+  public Vector3 gravity = new Vector3(0, -9.81f, 0);
+  [Range(0, 1)]
+  public float damping = 0.1f;
+  #endregion
+
+  #region Constraints
+  [Header("Constraints")]
+  [Range(0.1f, 1)]
+  public float stiffness = 0.9f;
+  [Range(0, 1)]
+  public float bendingStiffness = 0.9f;
+  [Range(-1, 1)]
+  public float bendiness = 0f;
+  [ConditionalHideAttribute("hide")]
+  [Tooltip("Acos(bendiness)")]
+  public float restAngle = 0f;
   #endregion
 
   #region Wind Parameters
@@ -81,7 +92,7 @@ public class ClothSimulation : MonoBehaviour
 
   #region Collision Parameters
   [Header("Collision Parameters")]
-  // mesh collision
+  public float selfCollisionRadius = 0.02f;
   public SkinnedMesh skinnedMeshCollider;
   public float meshCollisionRadius = 0.018f;
   public float meshDampRadius = 0.022f;
@@ -107,7 +118,8 @@ public class ClothSimulation : MonoBehaviour
   Vector3[] deltaP;
   UInt3Struct[] deltaPuint;
   int[] deltaC;
-  Triangleids[] tri;
+  // Triangleids[] vertexData.sortedTriangles;
+  // NeighborTriangleids[] neighborTri;
   // Vector3[] skinnedPos;
   float[] bw;
   float time = 0;
@@ -122,6 +134,7 @@ public class ClothSimulation : MonoBehaviour
   
   ComputeBuffer boneWeight;
   ComputeBuffer sortedTriangles;
+  ComputeBuffer neighborTriangles;
   ComputeBuffer skinnedMeshPositions;
   ComputeBuffer projectedSkinnedMeshPositions;
   ComputeBuffer skinnedMeshNormals;
@@ -154,10 +167,15 @@ public class ClothSimulation : MonoBehaviour
     skinnedMeshCollider.BakeMeshData();
 
     vertexData = _Vertex.LoadData(filename, saveFolder);
+
+    _Mesh.AutoWeld(mesh, weldDistance);
     _Vertex.InitRawMesh(mesh,
     out totalVerts,
     out totalTrianglePoints);
     mesh.MarkDynamic();
+
+    totalTriangles = vertexData.sortedTriangles.Length;
+    totalTriangleNeighbors = vertexData.neighborTriangles.Length;
 
     // Compute Shader Initialization
     InitKernels();
@@ -213,6 +231,7 @@ public class ClothSimulation : MonoBehaviour
     int strideInt = System.Runtime.InteropServices.Marshal.SizeOf(typeof(int));
     int strideUint3 = System.Runtime.InteropServices.Marshal.SizeOf(typeof(uint)) * 3;
     int strideTriangleids = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Triangleids));
+    int strideNeighborTriangleids = System.Runtime.InteropServices.Marshal.SizeOf(typeof(NeighborTriangleids));
 
     positions = new ComputeBuffer(totalVerts, strideFloat3);
     projectedPositions = new ComputeBuffer(totalVerts, strideFloat3);
@@ -223,7 +242,8 @@ public class ClothSimulation : MonoBehaviour
     deltaCount = new ComputeBuffer(totalVerts, strideInt);
 
     boneWeight = new ComputeBuffer(totalVerts, strideFloat);
-    sortedTriangles = new ComputeBuffer(totalTris, strideTriangleids);
+    sortedTriangles = new ComputeBuffer(totalTriangles, strideTriangleids);
+    neighborTriangles = new ComputeBuffer(totalTriangleNeighbors, strideNeighborTriangleids);
     skinnedMeshPositions = new ComputeBuffer(skinnedMeshCollider.vertexCount, strideFloat3);
     projectedSkinnedMeshPositions = new ComputeBuffer(skinnedMeshCollider.vertexCount, strideFloat3);
     skinnedMeshNormals = new ComputeBuffer(skinnedMeshCollider.vertexCount, strideFloat3);
@@ -246,6 +266,13 @@ public class ClothSimulation : MonoBehaviour
     PBDClothSolver.SetBuffer(DistanceConstraint, "deltaCount", deltaCount);
     PBDClothSolver.SetBuffer(DistanceConstraint, "boneWeight", boneWeight);
     PBDClothSolver.SetBuffer(DistanceConstraint, "sortedTriangles", sortedTriangles);
+
+    PBDClothSolver.SetBuffer(BendConstraint, "projectedPositions", projectedPositions);
+    PBDClothSolver.SetBuffer(BendConstraint, "deltaPos", deltaPositions);
+    PBDClothSolver.SetBuffer(BendConstraint, "deltaPosAsInt", deltaPositionsUInt);
+    PBDClothSolver.SetBuffer(BendConstraint, "deltaCount", deltaCount);
+    PBDClothSolver.SetBuffer(BendConstraint, "boneWeight", boneWeight);
+    PBDClothSolver.SetBuffer(BendConstraint, "neighborTriangles", neighborTriangles);
 
     PBDClothSolver.SetBuffer(AverageConstraintDeltas, "projectedPositions", projectedPositions);
     PBDClothSolver.SetBuffer(AverageConstraintDeltas, "deltaPos", deltaPositions);
@@ -281,7 +308,6 @@ public class ClothSimulation : MonoBehaviour
     deltaP = new Vector3[totalVerts];
     deltaPuint = new UInt3Struct[totalVerts];
     deltaC = new int[totalVerts];
-    tri = new Triangleids[totalTris];
     bw = new float[totalVerts];
 
     for (int i=0; i < totalVerts; i++)
@@ -305,11 +331,10 @@ public class ClothSimulation : MonoBehaviour
       // print(mesh.boneWeights[vertexData.custom2raw[i][0]].weight3);
     }
     // print(bw[0]);
-    bw[0] = 0;
+    // bw[0] = 0;
     // bw[1000] = 0;
     pos = _Convert.FloatArrayToVector3Array(vertexData.positions);
-    tri = vertexData.sortedTriangles.ToArray();
-    // skinnedPos = skinnedMeshCollider.sharedMesh.vertices;
+    Debug.Log(vertexData.neighborTriangles.Length);
 
     positions.SetData(pos);
     projectedPositions.SetData(pos);
@@ -318,7 +343,8 @@ public class ClothSimulation : MonoBehaviour
     deltaPositionsUInt.SetData(deltaPuint);
     deltaCount.SetData(deltaC);
     boneWeight.SetData(bw);
-    sortedTriangles.SetData(tri);
+    sortedTriangles.SetData(vertexData.sortedTriangles.ToArray());
+    neighborTriangles.SetData(vertexData.neighborTriangles.ToArray());
     skinnedMeshPositions.SetData(skinnedMeshCollider.bakedVertices.ToArray());
     projectedSkinnedMeshPositions.SetData(skinnedMeshCollider.bakedVertices.ToArray());
     skinnedMeshNormals.SetData(skinnedMeshCollider.bakedNormals.ToArray());
@@ -331,7 +357,7 @@ public class ClothSimulation : MonoBehaviour
     PBDClothSolver.SetVector("gravity", gravity);
     PBDClothSolver.SetFloat("stiffness", stiffness);
     PBDClothSolver.SetFloat("bendiness", bendiness);
-    PBDClothSolver.SetFloat("collisionRadius", collisionRadius);
+    PBDClothSolver.SetFloat("selfCollisionRadius", selfCollisionRadius);
     PBDClothSolver.SetFloat("meshCollisionRadius", meshCollisionRadius);
     PBDClothSolver.SetFloat("meshDampRadius", meshDampRadius);
 
@@ -346,7 +372,7 @@ public class ClothSimulation : MonoBehaviour
     PBDClothSolver.SetFloat("lift", lift);
 
     PBDClothSolver.SetInt("totalSimulationVerts", totalVerts);
-    PBDClothSolver.SetInt("totalSimulationTriangles", totalTris);
+    PBDClothSolver.SetInt("totalSimulationTriangles", totalTriangles);
     PBDClothSolver.SetInt("totalMeshVerts", skinnedMeshCollider.vertexCount);
   }
 
@@ -357,6 +383,8 @@ public class ClothSimulation : MonoBehaviour
     PBDClothSolver.SetFloat("time", time);
     PBDClothSolver.SetVector("gravity", gravity);
     PBDClothSolver.SetFloat("stiffness", stiffness);
+    PBDClothSolver.SetFloat("bendingStiffness", bendingStiffness);
+    PBDClothSolver.SetFloat("restAngle", restAngle);
     PBDClothSolver.SetFloat("meshCollisionRadius", meshCollisionRadius);
     PBDClothSolver.SetFloat("meshDampRadius", meshDampRadius);
 
@@ -376,7 +404,9 @@ public class ClothSimulation : MonoBehaviour
     PBDClothSolver.Dispatch(ApplyExplicitEuler, totalVerts, 1, 1);
     for(int i=0; i < iterationSteps; i++)
     {
-      PBDClothSolver.Dispatch(DistanceConstraint, totalTris, 1, 1);
+      PBDClothSolver.Dispatch(DistanceConstraint, totalTriangles, 1, 1);
+      PBDClothSolver.Dispatch(AverageConstraintDeltas, totalVerts, 1, 1);
+      PBDClothSolver.Dispatch(BendConstraint, totalTriangleNeighbors, 1, 1);
       PBDClothSolver.Dispatch(AverageConstraintDeltas, totalVerts, 1, 1);
     }
     // PBDClothSolver.Dispatch(SelfCollision, totalVerts, 1, 1);
@@ -405,19 +435,19 @@ public class ClothSimulation : MonoBehaviour
 
     for (int _i=0; _i < iterationSteps; _i++)
     {
-      for (int i=0; i < totalTris; i++)
+      for (int i=0; i < totalTriangles; i++)
       {
-        int idxA = tri[i].A;
-        int idxB = tri[i].B;
-        int idxC = tri[i].C;
+        int idxA = vertexData.sortedTriangles[i].A;
+        int idxB = vertexData.sortedTriangles[i].B;
+        int idxC = vertexData.sortedTriangles[i].C;
 
         Vector3 A = pos[idxA];
         Vector3 B = pos[idxB];
         Vector3 C = pos[idxC];
 
-        float AB = tri[i].AB;
-        float BC = tri[i].BC;
-        float CA = tri[i].CA;
+        float AB = vertexData.sortedTriangles[i].AB;
+        float BC = vertexData.sortedTriangles[i].BC;
+        float CA = vertexData.sortedTriangles[i].CA;
 
         float wA = particleInvertMass * bw[idxA];
         float wB = particleInvertMass * bw[idxB];
@@ -479,6 +509,7 @@ public class ClothSimulation : MonoBehaviour
     if (deltaPositionsUInt != null) deltaPositionsUInt.Release();
     if (deltaCount != null) deltaCount.Release();
     if (sortedTriangles != null) sortedTriangles.Release();
+    if (neighborTriangles != null) neighborTriangles.Release();
     if (boneWeight != null) boneWeight.Release();
     if (skinnedMeshPositions != null) skinnedMeshPositions.Release();
     if (projectedSkinnedMeshPositions != null) projectedSkinnedMeshPositions.Release();
@@ -492,9 +523,11 @@ public class ClothSimulation : MonoBehaviour
     _Mesh.AutoWeld(mesh, weldDistance);
     vertexData.positions = _Convert.Vector3ArrayToFloatArray(mesh.vertices);
     vertexData = _Vertex.SortTrianglesByGrp(mesh.triangles, totalTrianglePoints, vertexData);
+    vertexData = _Vertex.SortTrianglesByNeighbor(vertexData.sortedTriangles, vertexData);
 
     totalVerts = vertexData.positions.Length;
-    totalTris = vertexData.sortedTriangles.Length;
+    totalTriangles = vertexData.sortedTriangles.Length;
+    totalTriangleNeighbors = vertexData.neighborTriangles.Length;
   }
 
   public void ReloadMeshData()
@@ -505,7 +538,7 @@ public class ClothSimulation : MonoBehaviour
     {
       _Vertex.ResetMeshData(vertexData.positions, mesh);
       totalVerts = vertexData.positions.Length;
-      totalTris = vertexData.sortedTriangles.Length;
+      totalTriangles = vertexData.sortedTriangles.Length;
     }
   }
 
