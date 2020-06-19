@@ -13,7 +13,7 @@ Currently, my cloth simulation uses Postion Based Dynamics and supports:
 Features comming soon:
 - Voxell Collision
 - Aerodynamics (lift and drag) [Wind Effect]
-- Primitive Collider Collision
+- Primitive Shape Collision (Sphere, Box and Capsule)
 
 
 Check out my YouTube Playlist where I record my journey on how I approach this problem!
