@@ -379,8 +379,8 @@ public class ClothSimulation : MonoBehaviour
       PBDClothSolver.Dispatch(DistanceConstraint, totalTris, 1, 1);
       PBDClothSolver.Dispatch(AverageConstraintDeltas, totalVerts, 1, 1);
     }
-    PBDClothSolver.Dispatch(SelfCollision, totalVerts, 1, 1);
-    PBDClothSolver.Dispatch(AverageConstraintDeltas, totalVerts, 1, 1);
+    // PBDClothSolver.Dispatch(SelfCollision, totalVerts, 1, 1);
+    // PBDClothSolver.Dispatch(AverageConstraintDeltas, totalVerts, 1, 1);
     PBDClothSolver.Dispatch(UpdatePositions, totalVerts, 1, 1);
     PBDClothSolver.Dispatch(UpdateSkinnedMeshPositions, skinnedMeshCollider.vertexCount, 1, 1);
     skinnedMeshCollider.BakeMeshData();
