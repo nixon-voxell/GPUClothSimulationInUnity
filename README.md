@@ -16,11 +16,11 @@ Features comming soon:
 - Primitive Shape Collision (Sphere, Box and Capsule)
 
 
-Check out my YouTube Playlist where I record my journey on how I approach this problem!
-(https://www.youtube.com/playlist?list=PLlnBGPe6GFdP8So9oS0YVoVjqkmJoREI_)
+Check out my [YouTube Playlist](https://www.youtube.com/playlist?list=PLlnBGPe6GFdP8So9oS0YVoVjqkmJoREI_) where I record my journey on how I approach this problem!
 
-Support me on Patreon so that I can allocate more time to work on this project!
-(https://www.patreon.com/voxelltechnologies)
+
+Support me on [Patreon](https://www.patreon.com/voxelltechnologies) so that I can allocate more time to work on this project!
+
 
 <!-- ###How to use?
 ---
