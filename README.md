@@ -1,7 +1,7 @@
 GPU Cloth Simulation For Real-time Application
 ---
 
-This repository is still currently in development, so everything is still in testing mode. A lot of things will break, download at your own risk :\
+This repository is still currently under development, so everything is still in testing mode. A lot of things will break, download at your own risk :\
 
 My goal is to replicate what this legend did: https://youtu.be/kCGHXlLR3l8 (A smooth and interactive cloth simulation)
 
