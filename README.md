@@ -17,7 +17,7 @@ Features comming soon:
 
 
 Check out my YouTube Playlist where I record my journey on how I approach this problem!
-https://www.youtube.com/watch?v=uzEOkoKWbiM&list=PLlnBGPe6GFdP8So9oS0YVoVjqkmJoREI_
+https://www.youtube.com/playlist?list=PLlnBGPe6GFdP8So9oS0YVoVjqkmJoREI_
 
 Support me on Patreon so that I can allocate more time to work on this project!
 https://www.patreon.com/voxelltechnologies
