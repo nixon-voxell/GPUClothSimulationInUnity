@@ -1,7 +1,7 @@
 GPU Cloth Simulation For Real-time Application
 ---
 
-This repository is still currently under development, so everything is still in testing mode. A lot of things will break, download at your own risk :\
+This repository is still currently under development, so everything is still in testing mode. A lot of things will break, download at your own risk :/
 
 My goal is to replicate what this legend did: https://youtu.be/kCGHXlLR3l8 (A smooth and interactive cloth simulation)
 
@@ -25,3 +25,8 @@ Support me on [Patreon](https://www.patreon.com/voxelltechnologies) so that I ca
 <!-- ###How to use?
 ---
  -->
+
+
+License
+---
+You can use this software in a commercial product or game, but you cannot sell this software on the Unity Asset Store or any other platform that sells software tools for developers.
