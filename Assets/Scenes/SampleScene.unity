@@ -266,7 +266,7 @@ PrefabInstance:
     - target: {fileID: -927199367670048503, guid: 77b9eda70134cf24a82290bc735ab5ad,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 864976983610301244, guid: 77b9eda70134cf24a82290bc735ab5ad,
         type: 3}
@@ -334,30 +334,30 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mesh: {fileID: 2622413268920017230, guid: 77b9eda70134cf24a82290bc735ab5ad, type: 3}
-  totalVerts: 1944
+  totalVerts: 2028
   totalTrianglePoints: 11292
-  totalTris: 3764
+  totalTriangles: 3764
+  totalTriangleNeighbors: 5584
   PBDClothSolver: {fileID: 7200000, guid: a625bdce07e4dcc42b23c2d549862493, type: 3}
   weldDistance: 0.0001
   iterationSteps: 20
   subSteps: 10
-  gravity: {x: 0, y: -5, z: 0}
-  damping: 0.1
-  stiffness: 0.989
-  bendiness: 0.85
-  bendingStiffness: 0.9
-  collisionRadius: 0.02
   particleMass: 0.01
   particleInvertMass: 100
-  windDirection: {x: 1, y: -0.5, z: 1}
-  windStrength: 1
+  gravity: {x: 0, y: -5, z: 0}
+  damping: 0.1
+  stiffness: 1
+  bendingStiffness: 0.1
+  bendiness: 1
+  restAngle: 0
+  clothThickness: 0.02
+  windVelocity: {x: 1, y: -0.5, z: 1}
   windSpeed: 1
   turbulence: 0.1
   drag: 0.01
   lift: 0.1
   skinnedMeshCollider: {fileID: 29915524}
-  meshCollisionRadius: 0.02
-  meshDampRadius: 0.03
+  meshThickness: 0.03
   SphereColliders: []
   BoxColliders: []
   CapsuleColliders: []
@@ -547,6 +547,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Skirt_Simulation
       objectReference: {fileID: 0}
+    - target: {fileID: -927199367670048503, guid: 376eea421b0ad3a44aabd2ca2c2903cf,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 376eea421b0ad3a44aabd2ca2c2903cf, type: 3}
 --- !u!1 &174671708 stripped
@@ -570,28 +575,28 @@ MonoBehaviour:
   mesh: {fileID: -725798639059963842, guid: 376eea421b0ad3a44aabd2ca2c2903cf, type: 3}
   totalVerts: 2664
   totalTrianglePoints: 15552
-  totalTris: 5184
+  totalTriangles: 5184
+  totalTriangleNeighbors: 7704
   PBDClothSolver: {fileID: 7200000, guid: a625bdce07e4dcc42b23c2d549862493, type: 3}
   weldDistance: 0.0001
   iterationSteps: 20
   subSteps: 10
+  particleMass: 0.01
+  particleInvertMass: 100
   gravity: {x: 0, y: -5, z: 0}
   damping: 0.1
   stiffness: 0.989
-  bendiness: 0.85
   bendingStiffness: 0.9
-  collisionRadius: 0.02
-  particleMass: 0.01
-  particleInvertMass: 100
-  windDirection: {x: 1, y: -0.5, z: 1}
-  windStrength: 1
+  bendiness: 0.85
+  restAngle: 0
+  clothThickness: 0.02
+  windVelocity: {x: 1, y: -0.5, z: 1}
   windSpeed: 1
   turbulence: 0.1
   drag: 0.01
   lift: 0.1
   skinnedMeshCollider: {fileID: 174671711}
-  meshCollisionRadius: 0.02
-  meshDampRadius: 0.03
+  meshThickness: 0.03
   SphereColliders: []
   BoxColliders: []
   CapsuleColliders: []
@@ -885,8 +890,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_LocalRotation: {x: -0.12698483, y: 0.051179286, z: -0.0064576035, w: -0.9905624}
-  m_LocalPosition: {x: 0.5758633, y: 1.1994494, z: -4.7931457}
+  m_LocalRotation: {x: 0.04797636, y: -0.016195606, z: 0.0006218553, w: 0.99871695}
+  m_LocalPosition: {x: 0.34987992, y: 0.66029006, z: -1.5577059}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -1105,3 +1110,126 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1804567864 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4720875245130896613, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+    type: 3}
+  m_PrefabInstance: {fileID: 1827941850}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1804567867
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804567864}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2dea6c8f08b4af84f9643cc746d7d0a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mesh: {fileID: -8884592712571033611, guid: 9b6eb22f529613242b30f2e3be6b82b5, type: 3}
+  totalVerts: 74
+  totalTrianglePoints: 366
+  totalTriangles: 122
+  totalTriangleNeighbors: 171
+  PBDClothSolver: {fileID: 7200000, guid: a625bdce07e4dcc42b23c2d549862493, type: 3}
+  weldDistance: 0.0001
+  iterationSteps: 1
+  subSteps: 10
+  particleMass: 0.01
+  particleInvertMass: 100
+  gravity: {x: 0, y: -5, z: 0}
+  damping: 0.1
+  stiffness: 1
+  bendingStiffness: 0.1
+  bendiness: 1
+  restAngle: 0
+  clothThickness: 0.02
+  windVelocity: {x: 1, y: -0.5, z: 1}
+  windSpeed: 1
+  turbulence: 0.1
+  drag: 0.01
+  lift: 0.1
+  skinnedMeshCollider: {fileID: 29915524}
+  meshThickness: 0.03
+  SphereColliders: []
+  BoxColliders: []
+  CapsuleColliders: []
+  saveFolder: ClothData
+  filename: SimpleCloth
+  hide: 0
+--- !u!1001 &1827941850
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -4216859302048453862, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4216859302048453862, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.51
+      objectReference: {fileID: 0}
+    - target: {fileID: -4216859302048453862, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -2.072
+      objectReference: {fileID: 0}
+    - target: {fileID: -4216859302048453862, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4216859302048453862, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4216859302048453862, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4216859302048453862, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -4216859302048453862, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: -4216859302048453862, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4216859302048453862, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4216859302048453862, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -927199367670048503, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_Name
+      value: SimpleCloth
+      objectReference: {fileID: 0}
+    - target: {fileID: -927199367670048503, guid: 9b6eb22f529613242b30f2e3be6b82b5,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 9b6eb22f529613242b30f2e3be6b82b5, type: 3}

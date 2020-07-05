@@ -15,6 +15,7 @@ class ClothSimulationEditor : Editor {
   {
     clothSim.mesh = clothSim.GetComponent<SkinnedMeshRenderer>().sharedMesh;
     clothSim.particleInvertMass = 1 / clothSim.particleMass;
+    clothSim.restAngle = Mathf.Acos(clothSim.bendiness);
 
     _Vertex.InitRawMesh(clothSim.mesh,
     out clothSim.totalVerts,

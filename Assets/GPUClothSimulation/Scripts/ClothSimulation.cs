@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using UnityEngine;
 using Helper;
 
@@ -38,7 +35,7 @@ public class ClothSimulation : MonoBehaviour
 
   #region Cloth Simulation Parameters
   [Header("Cloth Simulation Parameters")]
-  public ComputeShader PBDClothSolver;
+  [SerializeField] public ComputeShader PBDClothSolver;
   [Tooltip("Merge any 2 vertices within this distance.")]
   public float weldDistance = 0.0001f;
   [Tooltip("Keep this as low as possible to increase performance. " +
@@ -63,23 +60,27 @@ public class ClothSimulation : MonoBehaviour
 
   #region Constraints
   [Header("Constraints")]
+  // distance constraint
   [Range(0.1f, 1)]
   public float stiffness = 0.9f;
-  [Range(0, 1)]
-  public float bendingStiffness = 0.9f;
+
+  // bending constraint
+  [Range(0.01f, 1)]
+  public float bendingStiffness = 0.05f;
   [Range(-1, 1)]
-  public float bendiness = 0f;
+  public float bendiness = 1f;
   [ConditionalHideAttribute("hide")]
   [Tooltip("Acos(bendiness)")]
   public float restAngle = 0f;
+
+  // self collision
+  public float clothThickness = 0.02f;
   #endregion
 
   #region Wind Parameters
   [Header("Wind Parameters")]
   [Tooltip("Direction of where the wind will blow, please keep this between 0 to 1.")]
-  public Vector3 windDirection = new Vector3(1, -0.5f, 1);
-  [Tooltip("A multiplier to the gradient noise.")]
-  public float windStrength = 1;
+  public Vector3 windVelocity = new Vector3(1, -0.5f, 1);
   [Tooltip("Controls how fast we scroll through the gradient noise.")]
   public float windSpeed = 1;
   [Tooltip("Scale of gradient noise.")]
@@ -92,10 +93,8 @@ public class ClothSimulation : MonoBehaviour
 
   #region Collision Parameters
   [Header("Collision Parameters")]
-  public float selfCollisionRadius = 0.02f;
   public SkinnedMesh skinnedMeshCollider;
-  public float meshCollisionRadius = 0.018f;
-  public float meshDampRadius = 0.022f;
+  public float meshThickness = 0.03f;
   public SphereCollider[] SphereColliders;
   public BoxCollider[] BoxColliders;
   public CapsuleCollider[] CapsuleColliders;
@@ -141,6 +140,7 @@ public class ClothSimulation : MonoBehaviour
 
   // forces
   int ExternalForce;
+  int Wind;
   int DampVelocities;
   int ApplyExplicitEuler;
 
@@ -205,6 +205,7 @@ public class ClothSimulation : MonoBehaviour
   {
     // forces
     ExternalForce = PBDClothSolver.FindKernel("ExternalForce");
+    Wind = PBDClothSolver.FindKernel("Wind");
     DampVelocities = PBDClothSolver.FindKernel("DampVelocities");
     ApplyExplicitEuler = PBDClothSolver.FindKernel("ApplyExplicitEuler");
 
@@ -252,6 +253,11 @@ public class ClothSimulation : MonoBehaviour
     PBDClothSolver.SetBuffer(ExternalForce, "velocities", velocities);
     PBDClothSolver.SetBuffer(ExternalForce, "boneWeight", boneWeight);
 
+    PBDClothSolver.SetBuffer(Wind, "velocities", velocities);
+    PBDClothSolver.SetBuffer(Wind, "projectedPositions", projectedPositions);
+    PBDClothSolver.SetBuffer(Wind, "boneWeight", boneWeight);
+    PBDClothSolver.SetBuffer(Wind, "sortedTriangles", sortedTriangles);
+
     PBDClothSolver.SetBuffer(DampVelocities, "velocities", velocities);
 
     PBDClothSolver.SetBuffer(ApplyExplicitEuler, "positions", positions);
@@ -284,6 +290,7 @@ public class ClothSimulation : MonoBehaviour
     PBDClothSolver.SetBuffer(SelfCollision, "deltaPosAsInt", deltaPositionsUInt);
     PBDClothSolver.SetBuffer(SelfCollision, "deltaCount", deltaCount);
     PBDClothSolver.SetBuffer(SelfCollision, "boneWeight", boneWeight);
+    PBDClothSolver.SetBuffer(SelfCollision, "sortedTriangles", sortedTriangles);
 
     PBDClothSolver.SetBuffer(MeshCollision, "positions", positions);
     PBDClothSolver.SetBuffer(MeshCollision, "velocities", velocities);
@@ -326,15 +333,9 @@ public class ClothSimulation : MonoBehaviour
       {
         bw[i] = 1;
       }
-      // print(mesh.boneWeights[vertexData.custom2raw[i][0]].weight1);
-      // print(mesh.boneWeights[vertexData.custom2raw[i][0]].weight2);
-      // print(mesh.boneWeights[vertexData.custom2raw[i][0]].weight3);
     }
-    // print(bw[0]);
     // bw[0] = 0;
-    // bw[1000] = 0;
     pos = _Convert.FloatArrayToVector3Array(vertexData.positions);
-    Debug.Log(vertexData.neighborTriangles.Length);
 
     positions.SetData(pos);
     projectedPositions.SetData(pos);
@@ -348,6 +349,17 @@ public class ClothSimulation : MonoBehaviour
     skinnedMeshPositions.SetData(skinnedMeshCollider.bakedVertices.ToArray());
     projectedSkinnedMeshPositions.SetData(skinnedMeshCollider.bakedVertices.ToArray());
     skinnedMeshNormals.SetData(skinnedMeshCollider.bakedNormals.ToArray());
+
+    // for (int i=0; i < vertexData.sortedTriangles.Length; i++)
+    // {
+    //   if (vertexData.sortedTriangles[i].A == 0 || vertexData.sortedTriangles[i].B == 0 || vertexData.sortedTriangles[i].C == 0)
+    //   {
+    //     print(vertexData.sortedTriangles[i].A + " " + vertexData.sortedTriangles[i].B + " " + vertexData.sortedTriangles[i].C);
+    //     print(vertexData.sortedTriangles[i].AB + " " + vertexData.sortedTriangles[i].BC + " " + vertexData.sortedTriangles[i].CA);
+    //   }
+    // }
+
+    print(pos[0]);
   }
 
   void InitVariables()
@@ -357,15 +369,13 @@ public class ClothSimulation : MonoBehaviour
     PBDClothSolver.SetVector("gravity", gravity);
     PBDClothSolver.SetFloat("stiffness", stiffness);
     PBDClothSolver.SetFloat("bendiness", bendiness);
-    PBDClothSolver.SetFloat("selfCollisionRadius", selfCollisionRadius);
-    PBDClothSolver.SetFloat("meshCollisionRadius", meshCollisionRadius);
-    PBDClothSolver.SetFloat("meshDampRadius", meshDampRadius);
+    PBDClothSolver.SetFloat("clothThickness", clothThickness);
+    PBDClothSolver.SetFloat("meshThickness", meshThickness);
 
     PBDClothSolver.SetFloat("particleMass", particleMass);
     PBDClothSolver.SetFloat("particleInvertMass", particleInvertMass);
 
-    PBDClothSolver.SetVector("windDirection", windDirection);
-    PBDClothSolver.SetFloat("windStrength", windStrength);
+    PBDClothSolver.SetVector("windVelocity", windVelocity);
     PBDClothSolver.SetFloat("windSpeed", windSpeed);
     PBDClothSolver.SetFloat("turbulence", turbulence);
     PBDClothSolver.SetFloat("drag", drag);
@@ -385,11 +395,9 @@ public class ClothSimulation : MonoBehaviour
     PBDClothSolver.SetFloat("stiffness", stiffness);
     PBDClothSolver.SetFloat("bendingStiffness", bendingStiffness);
     PBDClothSolver.SetFloat("restAngle", restAngle);
-    PBDClothSolver.SetFloat("meshCollisionRadius", meshCollisionRadius);
-    PBDClothSolver.SetFloat("meshDampRadius", meshDampRadius);
+    PBDClothSolver.SetFloat("meshThickness", meshThickness);
 
-    PBDClothSolver.SetVector("windDirection", windDirection);
-    PBDClothSolver.SetFloat("windStrength", windStrength);
+    PBDClothSolver.SetVector("windVelocity", windVelocity);
     PBDClothSolver.SetFloat("windSpeed", windSpeed);
     PBDClothSolver.SetFloat("turbulence", turbulence);
     PBDClothSolver.SetFloat("drag", drag);
@@ -399,6 +407,7 @@ public class ClothSimulation : MonoBehaviour
   void DispatchKernels()
   {
     PBDClothSolver.Dispatch(ExternalForce, totalVerts, 1, 1);
+    // PBDClothSolver.Dispatch(Wind, totalTriangles, 1, 1);
     PBDClothSolver.Dispatch(MeshCollision, totalVerts, 1, 1);
     PBDClothSolver.Dispatch(DampVelocities, totalVerts, 1, 1);
     PBDClothSolver.Dispatch(ApplyExplicitEuler, totalVerts, 1, 1);
@@ -522,6 +531,7 @@ public class ClothSimulation : MonoBehaviour
   {
     _Mesh.AutoWeld(mesh, weldDistance);
     vertexData.positions = _Convert.Vector3ArrayToFloatArray(mesh.vertices);
+    print(vertexData.positions.Length);
     vertexData = _Vertex.SortTrianglesByGrp(mesh.triangles, totalTrianglePoints, vertexData);
     vertexData = _Vertex.SortTrianglesByNeighbor(vertexData.sortedTriangles, vertexData);
 
