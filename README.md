@@ -16,6 +16,7 @@ Features comming soon:
 - Vivace Gauss Seidel Method for optimization on GPU (random graph coloring)
 - Primitive Shape Collision (Sphere, Box and Capsule)
 
+Look at my plan on [Milanote](https://app.milanote.com/1JS0tP1NMEwO2f?p=qYevXFgGMpr) for more details.
 
 Check out my [YouTube Playlist](https://www.youtube.com/playlist?list=PLlnBGPe6GFdP8So9oS0YVoVjqkmJoREI_) where I record my journey on how I approach this problem!
 
