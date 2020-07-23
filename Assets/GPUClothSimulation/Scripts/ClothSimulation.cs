@@ -21,6 +21,9 @@ public class ClothSimulation : MonoBehaviour
   [ConditionalHideAttribute("hide")]
   public int totalTriangleNeighbors;
 
+  public Material frontMat;
+  public Material backMat;
+
   // [HideInInspector]
   // public Vector3[] verts;
   // [HideInInspector]
@@ -40,9 +43,9 @@ public class ClothSimulation : MonoBehaviour
   public float weldDistance = 0.0001f;
   [Tooltip("Keep this as low as possible to increase performance. " +
   "Increase this to increase quality of cloth (ex: more detailed folds and less clipping chance).")]
-  public uint iterationSteps = 2;
+  public uint iterationSteps = 10;
   [Tooltip("This should be higher than iteration steps.")]
-  public uint subSteps = 10;
+  public uint collisionSteps = 5;
   [Tooltip("Mass of each particle representing each vertices.")]
   public float particleMass = 0.01f;
   [ConditionalHideAttribute("hide")]
@@ -181,8 +184,18 @@ public class ClothSimulation : MonoBehaviour
     InitKernels();
     InitBuffers();
     InitVariables();
+
+    // init SkinnedMeshRenderer for front face
+    this.GetComponent<SkinnedMeshRenderer>().material = frontMat;
+    this.GetComponent<SkinnedMeshRenderer>().receiveShadows = false;
+    this.GetComponent<SkinnedMeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+    // init SkinnedMeshRenderer for back face
     backSide = _Mesh.CreateBackSide(this.gameObject);
     backMesh = backSide.GetComponent<SkinnedMeshRenderer>().sharedMesh;
+    backSide.GetComponent<SkinnedMeshRenderer>().material = backMat;
+    backSide.GetComponent<SkinnedMeshRenderer>().receiveShadows = false;
+    backSide.GetComponent<SkinnedMeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
   }
 
   void FixedUpdate()
@@ -334,7 +347,8 @@ public class ClothSimulation : MonoBehaviour
         bw[i] = 1;
       }
     }
-    // bw[0] = 0;
+    bw[0] = 0;
+    // print(bw[0]);
     pos = _Convert.FloatArrayToVector3Array(vertexData.positions);
 
     positions.SetData(pos);
@@ -396,6 +410,7 @@ public class ClothSimulation : MonoBehaviour
     PBDClothSolver.SetFloat("bendingStiffness", bendingStiffness);
     PBDClothSolver.SetFloat("restAngle", restAngle);
     PBDClothSolver.SetFloat("meshThickness", meshThickness);
+    PBDClothSolver.SetFloat("ClothThickness", clothThickness);
 
     PBDClothSolver.SetVector("windVelocity", windVelocity);
     PBDClothSolver.SetFloat("windSpeed", windSpeed);
@@ -411,15 +426,21 @@ public class ClothSimulation : MonoBehaviour
     PBDClothSolver.Dispatch(MeshCollision, totalVerts, 1, 1);
     PBDClothSolver.Dispatch(DampVelocities, totalVerts, 1, 1);
     PBDClothSolver.Dispatch(ApplyExplicitEuler, totalVerts, 1, 1);
-    for(int i=0; i < iterationSteps; i++)
+
+    // for (int i=0; i < collisionSteps; i++)
+    // {
+      PBDClothSolver.Dispatch(SelfCollision, totalTriangles, 1, 1);
+      PBDClothSolver.Dispatch(AverageConstraintDeltas, totalVerts, 1, 1);
+    // }
+
+    for (int i=0; i < iterationSteps; i++)
     {
       PBDClothSolver.Dispatch(DistanceConstraint, totalTriangles, 1, 1);
       PBDClothSolver.Dispatch(AverageConstraintDeltas, totalVerts, 1, 1);
       PBDClothSolver.Dispatch(BendConstraint, totalTriangleNeighbors, 1, 1);
       PBDClothSolver.Dispatch(AverageConstraintDeltas, totalVerts, 1, 1);
     }
-    // PBDClothSolver.Dispatch(SelfCollision, totalVerts, 1, 1);
-    // PBDClothSolver.Dispatch(AverageConstraintDeltas, totalVerts, 1, 1);
+
     PBDClothSolver.Dispatch(UpdatePositions, totalVerts, 1, 1);
     PBDClothSolver.Dispatch(UpdateSkinnedMeshPositions, skinnedMeshCollider.vertexCount, 1, 1);
     skinnedMeshCollider.BakeMeshData();

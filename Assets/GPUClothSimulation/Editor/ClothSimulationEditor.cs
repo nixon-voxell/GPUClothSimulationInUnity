@@ -7,7 +7,8 @@ class ClothSimulationEditor : Editor {
 
   ClothSimulation clothSim;
 
-  void OnEnable() {
+  void OnEnable()
+  {
     clothSim = (ClothSimulation)target;
   }
 

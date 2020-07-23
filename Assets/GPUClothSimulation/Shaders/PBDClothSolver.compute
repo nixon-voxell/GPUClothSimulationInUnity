@@ -1,45 +1,5 @@
 ﻿#include "./PBDCloth.cginc"
-
-#define Threads_8 [numthreads(8, 1, 1)]
-
-// uniform data
-float deltaT;
-float time;
-
-half3 gravity;
-half stiffness, bendingStiffness;
-float restAngle;
-half clothThickness;
-half meshThickness;
-
-float particleMass, particleInvertMass;
-
-half3 windVelocity;
-half windSpeed, turbulence;
-half drag, lift;
-
-uint totalSimulationVerts, totalSimulationTriangles, totalMeshVerts, totalSphereColliders;
-
-// buffers
-RWStructuredBuffer<float3> positions, projectedPositions, velocities;
-
-RWStructuredBuffer<float3> deltaPos;
-RWStructuredBuffer<uint3> deltaPosAsInt;
-RWStructuredBuffer<int> deltaCount;
-
-StructuredBuffer<float> boneWeight;
-
-StructuredBuffer<Triangleids> sortedTriangles;
-StructuredBuffer<NeighborTriangleids> neighborTriangles;
-
-RWStructuredBuffer<float3> skinnedMeshPositions;
-StructuredBuffer<float3> projectedSkinnedMeshPositions;
-StructuredBuffer<float3> skinnedMeshNormals;
-
-RWStructuredBuffer<float3> sphereColliderPositions;
-StructuredBuffer<float3> projectedSphereColliderPositions;
-StructuredBuffer<float> sphereColliderRadius;
-
+#define EPSILON 0.00001
 
 // helper functions-------------------------------
 void AtomicAddDelta(int indexIntoDeltaPos, float newDeltaVal, int axis)
@@ -307,68 +267,79 @@ void SelfCollision (uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
 
-  float3 p0 = projectedPositions[idx];
-  for (uint i=0; i < totalSimulationTriangles; i++)
+  // get position idx for each vertices
+  uint idxA = sortedTriangles[idx].A;
+  uint idxB = sortedTriangles[idx].B;
+  uint idxC = sortedTriangles[idx].C;
+
+  // get vertex positions for each idx
+  float3 p1 = projectedPositions[idxA];
+  float3 p2 = projectedPositions[idxB];
+  float3 p3 = projectedPositions[idxC];
+
+  for (uint i=0; i < totalSimulationVerts; i++)
   {
-    // get position idx for each vertices
-    uint idxA = sortedTriangles[i].A;
-    uint idxB = sortedTriangles[i].B;
-    uint idxC = sortedTriangles[i].C;
+    if (i != idxA && i != idxB && i != idxC)
+    }
+      float3 p0 = projectedPositions[i];
 
-    if (idxA != idx && idxB != idx && idxC != idx)
-    {
-      // get vertex positions for each idx
-      float3 p1 = projectedPositions[idxA];
-      float3 p2 = projectedPositions[idxB];
-      float3 p3 = projectedPositions[idxC];
+      // we assume that p1 is at position (0, 0, 0)
+      p0 = p0 - p1;
+      p2 = p2 - p1;
+      p3 = p3 - p1;
+      p1 = float3(0, 0, 0);
 
-      float3 n = normalize(cross(p2, p3));
-      float3 n_original = normalize(cross(p2 - p1, p3 - p1));
-      
-      // make sure that normal of triangle is facing the colliding vertex
-      float h = dot(p0 - p1, n_original);
+      // obtain normal by performing cross product
+      float3 n = cross(p2, p3);
+      float l = 1/length(n);
+      n = normalize(n);
+      float h = dot(p0, n);
+      // make sure that the normal is pointing at the positive direction
       n = h < 0 ? -n : n;
-      n_original = h < 0 ? -n_original : n_original;
-      h = dot(p0 - p1, n_original);
+      float f = dot(p0, n) - clothThickness;
 
-      if (h < clothThickness)
+      if (f < 0)
       {
         float3 q0 = n;
-        float3 q2 = (cross(p1, p3) + dot(n, cross(n, p3)) * p1) / length(cross(p2, p3));
-        float3 q3 = (cross(p1, p2) + dot(n, cross(n, p2)) * p1) / length(cross(p2, p3));
+        float3 q2 = (cross(p3, p0) + cross(n, p3) * dot(n, p0)) * l;
+        float3 q3 = -(cross(p2, p0) + cross(n, p2) * dot(n, p0)) * l;
         float3 q1 = -q0 - q2 - q3;
 
-        float lamda = 0;
-        lamda += particleInvertMass * dot(q0, q0);
-        lamda += particleInvertMass * dot(q1, q1);
-        lamda += particleInvertMass * dot(q2, q2);
-        lamda += particleInvertMass * dot(q3, q3);
-        lamda = (h - clothThickness) / lamda;
+        float denominator = particleInvertMass * dot(q1, q1);
+        denominator += particleInvertMass * dot(q2, q2);
+        denominator += particleInvertMass * dot(q3, q3);
+        denominator += particleInvertMass * dot(q0, q0);
 
-        float3 deltap0 = -particleInvertMass * lamda * q0 * boneWeight[idx];
-        float3 deltap1 = -particleInvertMass * lamda * q1 * boneWeight[idxA];
-        float3 deltap2 = -particleInvertMass * lamda * q2 * boneWeight[idxB];
-        float3 deltap3 = -particleInvertMass * lamda * q3 * boneWeight[idxC];
+        // if (denominator < EPSILON) return;
 
-        InterlockedAdd(deltaCount[idx], 1);
-        AtomicAddDelta(idx, deltap0.x, 0);
-        AtomicAddDelta(idx, deltap0.y, 1);
-        AtomicAddDelta(idx, deltap0.z, 2);
-
+        float3 dp0, dp1, dp2, dp3;
+        float s = f / denominator;
+        dp0 = -s * particleInvertMass * q0 * boneWeight[i];
+        dp1 = -s * particleInvertMass * q1 * boneWeight[idxA];
+        dp2 = -s * particleInvertMass * q2 * boneWeight[idxB];
+        dp3 = -s * particleInvertMass * q3 * boneWeight[idxC];
+        
+        // atomic add the number of constraints to deltaCount buffer
         InterlockedAdd(deltaCount[idxA], 1);
-        AtomicAddDelta(idxA, deltap1.x, 0);
-        AtomicAddDelta(idxA, deltap1.y, 1);
-        AtomicAddDelta(idxA, deltap1.z, 2);
-
         InterlockedAdd(deltaCount[idxB], 1);
-        AtomicAddDelta(idxB, deltap2.x, 0);
-        AtomicAddDelta(idxB, deltap2.y, 1);
-        AtomicAddDelta(idxB, deltap2.z, 2);
-
         InterlockedAdd(deltaCount[idxC], 1);
-        AtomicAddDelta(idxC, deltap3.x, 0);
-        AtomicAddDelta(idxC, deltap3.y, 1);
-        AtomicAddDelta(idxC, deltap3.z, 2);
+        InterlockedAdd(deltaCount[i], 1);
+
+        AtomicAddDelta(idxA, dp1.x, 0);
+        AtomicAddDelta(idxA, dp1.y, 1);
+        AtomicAddDelta(idxA, dp1.z, 2);
+
+        AtomicAddDelta(idxB, dp2.x, 0);
+        AtomicAddDelta(idxB, dp2.y, 1);
+        AtomicAddDelta(idxB, dp2.z, 2);
+
+        AtomicAddDelta(idxC, dp3.x, 0);
+        AtomicAddDelta(idxC, dp3.y, 1);
+        AtomicAddDelta(idxC, dp3.z, 2);
+
+        AtomicAddDelta(i, dp0.x, 0);
+        AtomicAddDelta(i, dp0.y, 1);
+        AtomicAddDelta(i, dp0.z, 2);
       }
     }
   }
@@ -380,7 +351,7 @@ void AverageConstraintDeltas(uint3 id : SV_DispatchThreadID)
 {
   uint idx = id.x;
 
-  if (deltaCount[idx] > 0.001)
+  if (deltaCount[idx] > 0)
   {
     deltaPos[idx].x = asfloat(deltaPosAsInt[idx].x);
     deltaPos[idx].y = asfloat(deltaPosAsInt[idx].y);

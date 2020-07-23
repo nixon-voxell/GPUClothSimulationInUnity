@@ -1,14 +1,14 @@
 fileFormatVersion: 2
-guid: aa8419f3f77486c4b8e011e0c922b3db
+guid: 2dea6c8f08b4af84f9643cc746d7d0a0
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
   defaultReferences:
   - mesh: {instanceID: 0}
+  - frontMat: {fileID: 2100000, guid: 9c1cfdbd5b0d9f8469139cdce2f9643f, type: 2}
+  - backMat: {fileID: 2100000, guid: 5bb7f1b4d4f10464fb964d166e3037a8, type: 2}
   - PBDClothSolver: {fileID: 7200000, guid: a625bdce07e4dcc42b23c2d549862493, type: 3}
-  - parentObject: {instanceID: 0}
-  - particlePrefab: {fileID: 8073726894815134156, guid: 2a15feaa422fff14ba8174fd95e8e78a,
-      type: 3}
+  - skinnedMeshCollider: {instanceID: 0}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
