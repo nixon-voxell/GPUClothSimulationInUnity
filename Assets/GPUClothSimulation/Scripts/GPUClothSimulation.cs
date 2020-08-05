@@ -3,7 +3,7 @@ using UnityEngine;
 using Helper;
 
 [RequireComponent(typeof(SkinnedMeshRenderer))]
-public class ClothSimulation : MonoBehaviour
+public class GPUClothSimulation : MonoBehaviour
 {
   bool scriptEnabled = false;
   // TODO: use triangle data instead of vertex data

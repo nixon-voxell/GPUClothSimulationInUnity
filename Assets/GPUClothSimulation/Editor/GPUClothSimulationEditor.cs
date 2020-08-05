@@ -2,14 +2,14 @@
 using UnityEditor;
 using Helper;
 
-[CustomEditor(typeof(ClothSimulation))]
-class ClothSimulationEditor : Editor {
+[CustomEditor(typeof(GPUClothSimulation))]
+class GPUClothSimulationEditor : Editor {
 
-  ClothSimulation clothSim;
+  GPUClothSimulation clothSim;
 
   void OnEnable()
   {
-    clothSim = (ClothSimulation)target;
+    clothSim = (GPUClothSimulation)target;
   }
 
   public override void OnInspectorGUI()

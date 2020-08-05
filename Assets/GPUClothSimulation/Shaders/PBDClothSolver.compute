@@ -280,7 +280,7 @@ void SelfCollision (uint3 id : SV_DispatchThreadID)
   for (uint i=0; i < totalSimulationVerts; i++)
   {
     if (i != idxA && i != idxB && i != idxC)
-    }
+    {
       float3 p0 = projectedPositions[i];
 
       // we assume that p1 is at position (0, 0, 0)
