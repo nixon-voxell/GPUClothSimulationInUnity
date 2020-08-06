@@ -10,8 +10,8 @@ namespace DataStruct
   {
     public float[] pos;
     public float[] predicted_pos;
-    public float velocity;
-    public float inv_mass;
+    public float[] velocity;
+    public float invMass;
     public int idx;
     public int phase;
   }
