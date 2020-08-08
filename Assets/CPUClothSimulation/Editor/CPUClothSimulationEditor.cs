@@ -115,7 +115,10 @@ public class OpenFolderPanelExample : Editor
     if (GUILayout.Button("Revert to Original"))
     {
       clothSim.meshData = clothSim.originMeshData;
-      clothSim.mesh = clothSim.originMesh;
+      clothSim.mesh.vertices = clothSim.originMesh.vertices;
+      clothSim.mesh.RecalculateNormals();
+      clothSim.childMesh.vertices = clothSim.originMesh.vertices;
+      clothSim.childMesh.RecalculateNormals();
     }
     GUILayout.EndVertical();
   }

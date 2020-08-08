@@ -21097,7 +21097,7 @@ MonoBehaviour:
   thickness: 0.02
   damping: 0.99
   iterationSteps: 2
-  deltaTimeStep: 0.001
+  deltaTimeStep: 0.01
   startSimulationOnPlay: 1
   hide: 0
   simulate: 0

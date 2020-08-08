@@ -24,9 +24,19 @@ Check out my [YouTube Playlist](https://www.youtube.com/playlist?list=PLlnBGPe6G
 Support me on [Patreon](https://www.patreon.com/voxelltechnologies) so that I can allocate more time to work on this project!
 
 
-<!-- ###How to use?
+How to use?
 ---
- -->
+1. Create a mesh in [Blender](https://blender.org) that you want to simulate.
+2. Use my custom Blender Addon - [Cloth Exporter Tool]() to transform your mesh into PBD form and export it into your Unity's `StreamingAssets` folder.
+3. Create an empty GameObject in Unity.
+4. Drag and drop `ClothSimulation.cs` script onto the GameObject.
+5. Select the correct JSON file that the Blender Cloth Exporter Tool exports using the button - `Select JSON File`.
+6. Click the button - `Load Data from JSON`.
+7. Put in your `Front Material` and `Back Material`.
+8. Click `Build Mesh` to build the mesh that you have modeled in Blender.
+9. Click `Create Back Side` to build the other side of the mesh.
+10. Click `Apply Materials` to apply materials on both sides.
+
 
 
 License

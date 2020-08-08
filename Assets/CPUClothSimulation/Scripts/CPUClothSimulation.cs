@@ -60,7 +60,7 @@ public class CPUClothSimulation : MonoBehaviour
   #region Simulation
   [Header("Simulation")]
   public uint iterationSteps = 2;
-  public float deltaTimeStep = 0.001f;
+  public float deltaTimeStep = 0.01f;
   public bool startSimulationOnPlay = true;
   #endregion
 
