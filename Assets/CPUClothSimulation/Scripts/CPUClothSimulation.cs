@@ -5,14 +5,15 @@ using UnityEngine;
 using DataStruct;
 using Utilities;
 
-[RequireComponent(typeof(SkinnedMeshRenderer))]
+using PositionBasedDynamics;
+
+[RequireComponent(typeof(MeshFilter))]
+[RequireComponent(typeof(MeshRenderer))]
 public class CPUClothSimulation : MonoBehaviour
 {
   #region Initializattion;
   [ConditionalHideAttribute("hide")]
   public string path;
-  [ConditionalHideAttribute("hide")]
-  public Mesh mesh;
   [ConditionalHideAttribute("hide")]
   public int totalVerts;
   [ConditionalHideAttribute("hide")]
@@ -23,9 +24,23 @@ public class CPUClothSimulation : MonoBehaviour
   public int totalNeighborTriangles;
 
   [HideInInspector]
+  public Mesh mesh;
+  [HideInInspector]
+  public Mesh originMesh;
+  [HideInInspector]
   public MeshData meshData;
   [HideInInspector]
   public MeshData originMeshData;
+  [HideInInspector]
+  public Mesh childMesh;
+  [HideInInspector]
+  public GameObject backSide;
+  #endregion
+
+  #region Materials
+  [Header("Materials")]
+  public Material frontMaterial;
+  public Material backMaterial;
   #endregion
 
   #region Cloth Simulation Parameters
@@ -35,39 +50,37 @@ public class CPUClothSimulation : MonoBehaviour
   public float compressionStiffness = 1;
   [Range(0, 1)]
   public float strechStiffness = 1;
+  [Range(0, 1)]
+  public float bendingStiffness = 0.1f;
+  public float thickness = 0.02f;
+  [Range(0.9f, 1)]
+  public float damping = 0.99f;
   #endregion
 
   #region Simulation
   [Header("Simulation")]
+  public uint iterationSteps = 2;
   public float deltaTimeStep = 0.001f;
+  public bool startSimulationOnPlay = true;
   #endregion
 
   #region Editor Stuffs
   [HideInInspector]
   public bool hide = false;
+  [HideInInspector]
+  public bool simulate = false;
   #endregion
 
   void Start()
   {
+    if (startSimulationOnPlay) simulate = true;
   }
 
-  public void ShowMesh()
+  void Update()
   {
-    this.GetComponent<SkinnedMeshRenderer>().sharedMesh = mesh;
-  }
-
-  public void ExternalForce(float dt)
-  {
-    // we calculate the force based gravity first
-    Vector3 force = gravity;
-    for (int i=0; i < meshData.particles.Length; i++)
-    {
-      meshData.particles[i].velocity = _Math.AddFloatArray(meshData.particles[i].velocity, _Convert.Vector3ToFloat(dt * meshData.particles[i].invMass * force));
-    }
   }
 
   public void SimulateOneTimeStep(float dt)
   {
-    ExternalForce(dt);
   }
 }

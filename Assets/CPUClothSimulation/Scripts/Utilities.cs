@@ -97,6 +97,47 @@ namespace Utilities
         return null;
       }
     }
+
+    public static float[] SubtractFloatArray(float[] floatArray1, float[] floatArray2)
+    {
+      if (floatArray1.Length == floatArray2.Length)
+      {
+        float[] finalFloatArray = new float[floatArray1.Length];
+        for (int i=0; i < floatArray1.Length; i++)
+        {
+          finalFloatArray[i] = floatArray1[i] - floatArray2[i];
+        }
+        return finalFloatArray;
+      } else
+      {
+        return null;
+      }
+    }
+
+  }
+
+  public class _Mesh
+  {
+    public static Vector3[] ReverseNormals(Vector3[] normals)
+    {
+      Vector3[] reverseNormals = normals;
+      for (int i = 0; i < reverseNormals.Length; i++)
+      {
+        reverseNormals[i] *= -1;
+      }
+      return reverseNormals;
+    }
+
+    public static Mesh DeepCopyMesh(Mesh mesh)
+    {
+      Mesh newMesh = new Mesh();
+      newMesh.vertices = mesh.vertices;
+      newMesh.triangles = mesh.triangles;
+      newMesh.RecalculateBounds();
+      newMesh.RecalculateNormals();
+      newMesh.RecalculateTangents();
+      return newMesh;
+    }
   }
 
 }

@@ -30,82 +30,194 @@ public class OpenFolderPanelExample : Editor
     GUI.backgroundColor = new Color(0, 0, 0, 0.1f);
     GUILayout.BeginVertical("box");
     GUILayout.Label("Initializaion", boldTextStyle);
-    GUI.backgroundColor = Color.cyan;
+
+    // JSON
+    GUI.backgroundColor = Color.yellow;
     if (GUILayout.Button("Select JSON File"))
     {
-      clothSim.path = EditorUtility.OpenFilePanel("Load png Textures", "", "");
-      if (clothSim.path.StartsWith(Application.dataPath))
-        clothSim.path = clothSim.path.Substring(Application.dataPath.Length);
+      SelectFile();
     }
-    if (GUILayout.Button("Load Data from Json"))
+    if (GUILayout.Button("Load Data from JSON"))
     {
-      if (!File.Exists(Application.dataPath + clothSim.path))
+      LoadDataFromJson();
+    }
+
+    // build front mesh
+    GUI.backgroundColor = Color.magenta * new Color(1f, 1f, 1f, 0.7f);
+    if (clothSim.mesh == null)
+    {
+      if (GUILayout.Button("Build Mesh")) BuildMesh();
+    } else
+    {
+      if (GUILayout.Button("Rebuild Mesh")) BuildMesh();
+    }
+    
+
+    GUILayout.Space(10);
+
+    // Create mesh for the other side
+    GUI.backgroundColor = Color.magenta * new Color(1f, 1f, 1f, 0.7f);
+    if (clothSim.transform.childCount == 0)
+    {
+      if (GUILayout.Button("Create Back Side"))
       {
-        Debug.LogWarning("Json file does not exsits...");
-      } else
-      {
-        string jsonString = File.ReadAllText(Application.dataPath + clothSim.path);
-        clothSim.meshData = JsonConvert.DeserializeObject<MeshData>(jsonString);
-
-        if (clothSim.meshData.sequence != null)
-        {
-          meshTriangles = clothSim.meshData.sequence;
-        }
-
-        if (clothSim.meshData.particles != null)
-        {
-          meshVerts = new List<Vector3>();
-          foreach (Particle p in clothSim.meshData.particles)
-          {
-            meshVerts.Add(_Convert.FloatToVector3(p.pos));
-          }
-          clothSim.totalVerts = clothSim.meshData.particles.Length;
-        }
-
-        if (clothSim.meshData.edges != null)
-        {
-          clothSim.totalEdges = clothSim.meshData.edges.Length;
-        }
-        
-        if (clothSim.meshData.triangles != null)
-        {
-          clothSim.totalTriangles = clothSim.meshData.triangles.Length;
-        }
-
-        if (clothSim.meshData.neighborTriangles != null)
-        {
-          clothSim.totalNeighborTriangles = clothSim.meshData.neighborTriangles.Length;
-        }
+        clothSim.backSide = new GameObject("BackSide");
+        clothSim.backSide.transform.parent = clothSim.transform;
+        BuildBackSide();
       }
-
-      clothSim.originMeshData = clothSim.meshData;
-    }
-    if (GUILayout.Button("Build Mesh"))
+    } else
     {
-      if (meshVerts != null && meshTriangles != null)
+      if (GUILayout.Button("Recreate Back Side"))
       {
-        clothSim.mesh = new Mesh();
-        clothSim.mesh.SetVertices(meshVerts);
-        clothSim.mesh.SetTriangles(meshTriangles, 0);
-        clothSim.mesh.RecalculateNormals();
-        clothSim.ShowMesh();
-      } else
-      {
-        Debug.LogWarning("Mesh Data has not been loaded yet...");
+        BuildBackSide();
       }
     }
+    
+    // apply materials for front and back of the mesh
+    GUI.backgroundColor = Color.yellow;
+    if (GUILayout.Button("Apply Materials"))
+    {
+      clothSim.GetComponent<MeshRenderer>().material = clothSim.frontMaterial;
+      clothSim.transform.GetChild(0).GetComponent<MeshRenderer>().material = clothSim.backMaterial;
+    }
+
+    // draw the default inspector with all the public variables
     GUI.backgroundColor = Color.white;
     DrawDefaultInspector();
 
-    GUI.backgroundColor = Color.yellow;
-    if (GUILayout.Button("Simulate"))
+    GUILayout.Space(10);
+
+    // simulate one time step in editor and play mode
+    GUI.backgroundColor = new Color(0.8f, 0.9f, 1f, 1f);
+    if (GUILayout.Button("Simulate 1 Time Step"))
     {
       clothSim.SimulateOneTimeStep(clothSim.deltaTimeStep);
     }
+
+    // allow user to control if we want to start or stop stimulating the cloth in play mode
+    if (clothSim.simulate)
+    {
+      GUI.backgroundColor = Color.red * new Color(1f, 1f, 1f, 0.5f);
+      if (GUILayout.Button("Stop Simulation"))
+      {
+        clothSim.simulate = false;
+      }
+    } else
+    {
+      GUI.backgroundColor = Color.cyan;
+      if (GUILayout.Button("Start Simulation"))
+      {
+        clothSim.simulate = true;
+      }
+    }
+
+    GUI.backgroundColor = Color.green;
     if (GUILayout.Button("Revert to Original"))
     {
       clothSim.meshData = clothSim.originMeshData;
+      clothSim.mesh = clothSim.originMesh;
     }
     GUILayout.EndVertical();
   }
+
+  #region Button Functions
+  void LoadDataFromJson()
+  {
+    if (!File.Exists(Application.dataPath + clothSim.path))
+    {
+      Debug.LogWarning("Json file does not exsits...");
+    } else
+    {
+      string jsonString = File.ReadAllText(Application.dataPath + clothSim.path);
+      clothSim.meshData = JsonConvert.DeserializeObject<MeshData>(jsonString);
+
+      if (clothSim.meshData.sequence != null)
+      {
+        meshTriangles = clothSim.meshData.sequence;
+      }
+
+      if (clothSim.meshData.particles != null)
+      {
+        meshVerts = new List<Vector3>();
+        foreach (Particle p in clothSim.meshData.particles)
+        {
+          meshVerts.Add(p.pos);
+        }
+        clothSim.totalVerts = clothSim.meshData.particles.Length;
+      }
+
+      if (clothSim.meshData.edges != null)
+      {
+        clothSim.totalEdges = clothSim.meshData.edges.Length;
+      }
+      
+      if (clothSim.meshData.triangles != null)
+      {
+        clothSim.totalTriangles = clothSim.meshData.triangles.Length;
+      }
+
+      if (clothSim.meshData.neighborTriangles != null)
+      {
+        clothSim.totalNeighborTriangles = clothSim.meshData.neighborTriangles.Length;
+      }
+    }
+
+    clothSim.originMeshData = clothSim.meshData;
+  }
+
+  void BuildMesh()
+  {
+    if (meshVerts != null && meshTriangles != null)
+    {
+      if (clothSim.mesh == null) clothSim.mesh = new Mesh();
+      else clothSim.mesh.Clear();
+      clothSim.mesh.SetVertices(meshVerts);
+      clothSim.mesh.SetTriangles(meshTriangles, 0);
+      clothSim.mesh.RecalculateNormals();
+      clothSim.mesh.name = clothSim.path.Split('/')[clothSim.path.Split('/').Length-1].Split('.')[0];
+
+      clothSim.originMesh = clothSim.mesh;
+      clothSim.GetComponent<MeshFilter>().sharedMesh = clothSim.mesh;
+    } else
+    {
+      Debug.LogWarning("Mesh Data has not been loaded yet...");
+    }
+  }
+
+  void SelectFile()
+  {
+    clothSim.path = EditorUtility.OpenFilePanel("Load png Textures", "", "");
+    if (clothSim.path.StartsWith(Application.dataPath))
+      clothSim.path = clothSim.path.Substring(Application.dataPath.Length);
+  }
+
+  void BuildBackSide()
+  {
+    clothSim.backSide.transform.localPosition = Vector3.zero;
+    clothSim.backSide.transform.localRotation = Quaternion.Euler(0, 0, 0);
+    clothSim.backSide.transform.localScale = new Vector3(1, 1, 1);
+
+    if (clothSim.backSide.GetComponent<MeshFilter>() == null) clothSim.backSide.AddComponent(typeof(MeshFilter));
+    if (clothSim.backSide.GetComponent<MeshRenderer>() == null) clothSim.backSide.AddComponent(typeof(MeshRenderer));
+
+    clothSim.childMesh = _Mesh.DeepCopyMesh(clothSim.mesh);
+    clothSim.childMesh.MarkDynamic();
+    clothSim.childMesh.name = clothSim.mesh.name + "Back";
+    // clothSim.childMesh.normals = _Mesh.ReverseNormals(clothSim.mesh.normals);
+
+    // reverse the triangle order
+    for (int m = 0; m < clothSim.childMesh.subMeshCount; m++) {
+      int[] triangles = clothSim.childMesh.GetTriangles(m);
+      for (int i = 0; i < triangles.Length; i += 3) {
+        int temp = triangles[i + 0];
+        triangles[i + 0] = triangles[i + 1];
+        triangles[i + 1] = temp;
+      }
+      clothSim.childMesh.SetTriangles(triangles, m);
+    }
+
+    clothSim.childMesh.RecalculateNormals();
+    clothSim.backSide.GetComponent<MeshFilter>().sharedMesh = clothSim.childMesh;
+  }
+  #endregion
 }
