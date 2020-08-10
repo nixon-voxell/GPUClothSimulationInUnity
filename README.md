@@ -27,7 +27,7 @@ Support me on [Patreon](https://www.patreon.com/voxelltechnologies) so that I ca
 How to use?
 ---
 1. Create a mesh in [Blender](https://blender.org) that you want to simulate.
-2. Use my custom Blender Addon - [Cloth Exporter Tool]() to transform your mesh into PBD form and export it into your Unity's `StreamingAssets` folder.
+2. Use my custom Blender Addon - [Cloth Exporter Tool](https://github.com/voxell-tech/ClothExporter) to transform your mesh into PBD form and export it into your Unity's `StreamingAssets` folder.
 3. Create an empty GameObject in Unity.
 4. Drag and drop `ClothSimulation.cs` script onto the GameObject.
 5. Select the correct JSON file that the Blender Cloth Exporter Tool exports using the button - `Select JSON File`.
