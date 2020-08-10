@@ -31,7 +31,7 @@ namespace PositionBasedDynamics
       if (w == 0.0f) return false;
 
       v += dt * w * force * damping;
-      corr = p + dt * v;
+      corr = dt * v;
       return true;
     }
 

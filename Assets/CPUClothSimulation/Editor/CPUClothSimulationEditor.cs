@@ -92,6 +92,7 @@ public class OpenFolderPanelExample : Editor
     if (GUILayout.Button("Simulate 1 Time Step"))
     {
       clothSim.SimulateOneTimeStep(clothSim.deltaTimeStep);
+      clothSim.UpdateDataToMesh(clothSim.deltaTimeStep);
     }
 
     // allow user to control if we want to start or stop stimulating the cloth in play mode
@@ -114,11 +115,7 @@ public class OpenFolderPanelExample : Editor
     GUI.backgroundColor = Color.green;
     if (GUILayout.Button("Revert to Original"))
     {
-      clothSim.meshData = clothSim.originMeshData;
-      clothSim.mesh.vertices = clothSim.originMesh.vertices;
-      clothSim.mesh.RecalculateNormals();
-      clothSim.childMesh.vertices = clothSim.originMesh.vertices;
-      clothSim.childMesh.RecalculateNormals();
+      LoadDataFromJson(); BuildMesh(); BuildBackSide();
     }
     GUILayout.EndVertical();
   }
@@ -164,8 +161,6 @@ public class OpenFolderPanelExample : Editor
         clothSim.totalNeighborTriangles = clothSim.meshData.neighborTriangles.Length;
       }
     }
-
-    clothSim.originMeshData = clothSim.meshData;
   }
 
   void BuildMesh()
@@ -179,7 +174,6 @@ public class OpenFolderPanelExample : Editor
       clothSim.mesh.RecalculateNormals();
       clothSim.mesh.name = clothSim.path.Split('/')[clothSim.path.Split('/').Length-1].Split('.')[0];
 
-      clothSim.originMesh = clothSim.mesh;
       clothSim.GetComponent<MeshFilter>().sharedMesh = clothSim.mesh;
     } else
     {
