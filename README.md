@@ -8,10 +8,9 @@ My goal is to replicate what this legend did: https://youtu.be/kCGHXlLR3l8 (A sm
 Currently, my cloth simulation uses Postion Based Dynamics and supports:
 - Distance Constraint
 - Bending Constraint
-- Mesh Collision (not really working yet)
+- Point Triangle Distance Constraint (Self Collision)
 
 Features comming soon:
-- Self Collision
 - Aerodynamics (lift and drag) [Wind Effect]
 - Vivace Gauss Seidel Method for optimization on GPU (random graph coloring)
 - Primitive Shape Collision (Sphere, Box and Capsule)
