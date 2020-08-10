@@ -31,14 +31,14 @@ How to use?
 3. Create an empty GameObject in Unity.
 4. Drag and drop `ClothSimulation.cs` script onto the GameObject.
 5. Select the correct JSON file that the Blender Cloth Exporter Tool exports using the button - `Select JSON File`.
-6. Click the button - `Load Data from JSON`.
+6. Press the button - `Load Data from JSON`.
 7. Put in your `Front Material` and `Back Material`.
-8. Click `Build Mesh` to build the mesh that you have modeled in Blender.
-9. Click `Create Back Side` to build the other side of the mesh.
-10. Click `Apply Materials` to apply materials on both sides.
+8. Press `Build Mesh` to build the mesh that you have modeled in Blender.
+9. Press `Create Back Side` to build the other side of the mesh.
+10. Press `Apply Materials` to apply materials on both sides.
 
 
 
 License
 ---
-You can use this software in a commercial product or game, but you cannot sell this software on the Unity Asset Store or any other platform that sells software tools for developers.
+This project is under the GNU Public License, Version 3.
