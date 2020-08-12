@@ -69,4 +69,9 @@ namespace DataStruct
     public NeighborTriangles[] neighborTriangles;
     public int[] sequence;
   }
+
+  public struct SPHash
+  {
+    public List<int> indices;
+  }
 }

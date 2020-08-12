@@ -4,7 +4,6 @@ using UnityEngine;
 
 using DataStruct;
 using Utilities;
-using SpatialHashing;
 
 namespace PositionBasedDynamics
 {

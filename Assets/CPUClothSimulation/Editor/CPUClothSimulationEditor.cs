@@ -10,7 +10,7 @@ using DataStruct;
 using Utilities;
 
 [CustomEditor(typeof(CPUClothSimulation))]
-public class OpenFolderPanelExample : Editor
+public class CPUClothSimulationEditor : Editor
 {
   CPUClothSimulation clothSim;
   GUIStyle boldTextStyle = new GUIStyle();
@@ -27,6 +27,9 @@ public class OpenFolderPanelExample : Editor
 
   public override void OnInspectorGUI()
   {
+    if (clothSim.gridSize > 0) clothSim.invGridSize = 1.0f / clothSim.gridSize;
+    else clothSim.gridSize = 0;
+
     GUI.backgroundColor = new Color(0, 0, 0, 0.1f);
     GUILayout.BeginVertical("box");
     GUILayout.Label("Initializaion", boldTextStyle);
