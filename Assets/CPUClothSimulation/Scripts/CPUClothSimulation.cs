@@ -4,6 +4,7 @@ using UnityEngine;
 
 using DataStruct;
 using Utilities;
+using SpatialHashing;
 
 using PositionBasedDynamics;
 
@@ -72,7 +73,7 @@ public class CPUClothSimulation : MonoBehaviour
   {
     if (startSimulationOnPlay) simulate = true;
     meshData.particles[264].invMass = 0;
-    // meshData.particles[0].invMass = 0;
+    meshData.particles[0].invMass = 0;
   }
 
   void Update()
