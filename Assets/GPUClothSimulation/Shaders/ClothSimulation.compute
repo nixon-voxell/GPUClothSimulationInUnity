@@ -1,0 +1,8 @@
+#include "./DataStruct.cginc"
+#include "./PositionBasedDynamics.cginc"
+
+RWStructuredBuffer<Particle> particles;
+RWStructuredBuffer<Edge> edge;
+RWStructuredBuffer<Triangle> triangeles;
+RWStructuredBuffer<NeighborTriangles> neighborTriangles;
+

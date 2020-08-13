@@ -80,7 +80,6 @@ namespace PositionBasedDynamics
       corr0 = corr1 = corr2 = corr3 = Vector3.zero;
       if (w0 == 0f && w1 == 0f)
       {
-        corr0 = corr1 = corr2 = corr3 = Vector3.zero;
         return false;
       }
 
