@@ -40931,7 +40931,7 @@ MonoBehaviour:
   invGridSize: 1
   tableSize: 1000
   iterationSteps: 10
-  deltaTimeStep: 0.005
+  deltaTimeStep: 0.01
   startSimulationOnPlay: 1
   hide: 0
   simulate: 0

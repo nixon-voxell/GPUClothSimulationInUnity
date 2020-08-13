@@ -50,7 +50,7 @@ namespace SpatialHashing
         {
           for (int z=minZ; z <= maxZ; z+=gridSize)
           {
-            hashes.Add(Hash(new Vector3(x, y, z)));
+            hashes.Add(Mathf.Abs(Hash(new Vector3(x, y, z))));
           }
         }
       }
