@@ -1,8 +1,37 @@
 #include "./DataStruct.cginc"
 #include "./PositionBasedDynamics.cginc"
+#include "./Utilities.cginc"
 
 RWStructuredBuffer<Particle> particles;
 RWStructuredBuffer<Edge> edge;
 RWStructuredBuffer<Triangle> triangeles;
 RWStructuredBuffer<NeighborTriangles> neighborTriangles;
 
+float deltaT;
+float damping;
+
+#define THREADS [numthreads(8, 1, 1)]
+
+#pragma kernel SolveExternalForce
+THREADS
+void SolveExternalForce(uint3 id: SV_DispatchThreadID)
+{
+  uint idx = id.x;
+
+  float3 p = particles[idx].predictedPos;
+  float3 v = particles[idx].velocity;
+  float w = particles[idx].invMass;
+
+  float3 force = gravity / w;
+
+  float3 corr;
+  if (ExternalForce(
+    deltaT,
+    p, v, w,
+    force,
+    damping,
+    out corr))
+  {
+    particles[idx].predictedPos += corr;
+  }
+}

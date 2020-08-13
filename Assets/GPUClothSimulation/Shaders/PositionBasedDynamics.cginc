@@ -1,4 +1,4 @@
-float eps = 1e-6f;
+#define eps 1e-6f;
 
 /*
 functions that handles:
@@ -13,7 +13,7 @@ bool ExternalForce(
   out float3 corr)
 {
   corr = float3(0, 0, 0);
-  if (w == 0.0f) return false
+  if (w == 0.0f) return false;
   
   v += dt * w * force * damping;
   corr = dt * v;
@@ -31,7 +31,7 @@ bool DistanceConstraint(
 {
   corr0 = corr1 = float3(0, 0, 0);
   float wSum = w0 + w1;
-  if (wSum == 0f) return false;
+  if (wSum == 0.0f) return false;
 
   float3 n = p0 - p1;
   float d = length(n);
@@ -63,10 +63,7 @@ bool DihedralConstraint(
   out float3 corr3)
 {
   corr0 = corr1 = corr2 = corr3 = float3(0, 0, 0);
-  if (w0 == 0f && w1 == 0f)
-  {
-    return false;
-  }
+  if (w0 == 0.0f && w1 == 0.0f) return false;
 
   float3 e = p3 - p2;
   float elen = length(e);

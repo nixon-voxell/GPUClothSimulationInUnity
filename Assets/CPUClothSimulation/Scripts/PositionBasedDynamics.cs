@@ -46,7 +46,7 @@ namespace PositionBasedDynamics
     {
       corr0 = corr1 = Vector3.zero;
       float wSum = w0 + w1;
-      if (wSum == 0f) return false;
+      if (wSum == 0.0f) return false;
 
       Vector3 n = p0 - p1;
       float d = n.magnitude;
@@ -78,10 +78,7 @@ namespace PositionBasedDynamics
       out Vector3 corr3)
     {
       corr0 = corr1 = corr2 = corr3 = Vector3.zero;
-      if (w0 == 0f && w1 == 0f)
-      {
-        return false;
-      }
+      if (w0 == 0.0f && w1 == 0.0f) return false;
 
       Vector3 e = p3 - p2;
       float elen = e.magnitude;

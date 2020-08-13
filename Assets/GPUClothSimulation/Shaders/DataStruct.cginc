@@ -3,6 +3,7 @@ struct Particle
   float3 pos;
   float3 predictedPos;
   float3 velocity;
+  float invMass;
   int idx;
   int phase;
 };
