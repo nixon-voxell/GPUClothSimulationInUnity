@@ -40,6 +40,7 @@ How to use?
 Cloth Configurations
 ---
 These are the similar parameters in both CPU and GPU Cloth Simulation:
+
 ![Materials](./Pictures/materials.PNG)
 
 This determines the front material and back material for the cloth.
