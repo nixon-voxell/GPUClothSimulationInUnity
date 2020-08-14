@@ -41,9 +41,11 @@ Cloth Configurations
 ---
 These are the similar parameters in both CPU and GPU Cloth Simulation:
 ![Materials](./Pictures/materials.PNG)
+
 This determines the front material and back material for the cloth.
 
 ![ClothSimParam](./Pictures/cloth_simulation_parameters.PNG)
+
 Tweak these parameters to change the behaviour for the cloth.
 1. Gravity: Constant acceleration.
 2. Compression Stiffness: Coefficient for distance constraint when 2 particles are too close together.
@@ -53,6 +55,7 @@ Tweak these parameters to change the behaviour for the cloth.
 6. Damping: Multiplier of velocity for every simulation to reduce velocity (as air resistance).
 
 ![Simulation](./Pictures/simulation.PNG)
+
 Tweak these parameters to balance between accuracy and performance.
 1. Iteration Steps: Number of iterations to solve constraints for every simulation.
 2. Delta Time Step: Time pass between 2 simulations.
