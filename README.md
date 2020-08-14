@@ -28,7 +28,7 @@ How to use?
 1. Create a mesh in [Blender](https://blender.org) that you want to simulate.
 2. Use my custom Blender Addon - [Cloth Exporter Tool](https://github.com/voxell-tech/ClothExporter) to transform your mesh into PBD form and export it into your Unity's `StreamingAssets` folder.
 3. Create an empty GameObject in Unity.
-4. Drag and drop `ClothSimulation.cs` script onto the GameObject.
+4. Drag and drop `CPUClothSimulation.cs` or `GPUClothSimulation.cs` script onto the GameObject. (Check [Cloth Configurations](#cloth-configurations) for more cloth parameters' information.)
 5. Select the correct JSON file that the Blender Cloth Exporter Tool exports using the button - `Select JSON File`.
 6. Press the button - `Load Data from JSON`.
 7. Put in your `Front Material` and `Back Material`.
@@ -37,6 +37,26 @@ How to use?
 10. Press `Apply Materials` to apply materials on both sides.
 
 
+Cloth Configurations
+---
+These are the similar parameters in both CPU and GPU Cloth Simulation:
+![Materials](./Pictures/materials.PNG)
+This determines the front material and back material for the cloth.
+
+![ClothSimParam](./Pictures/cloth_simulation_parameters.PNG)
+Tweak these parameters to change the behaviour for the cloth.
+1. Gravity: Constant acceleration.
+2. Compression Stiffness: Coefficient for distance constraint when 2 particles are too close together.
+3. Stretch Stiffness: Coefficient for distance constraint when 2 particles are too far away.
+4. Bending Stiffness: Coefficient for bending constraint when 2 neighbor triangles are not at their rest angle.
+5. Thickness: Cloth thickness for all collisions.
+6. Damping: Multiplier of velocity for every simulation to reduce velocity (as air resistance).
+
+![Simulation](./Pictures/simulation.PNG)
+Tweak these parameters to balance between accuracy and performance.
+1. Iteration Steps: Number of iterations to solve constraints for every simulation.
+2. Delta Time Step: Time pass between 2 simulations.
+3. Start Simulation On Play: Choose if you want to start the simulation once you enter play mode.
 
 License
 ---

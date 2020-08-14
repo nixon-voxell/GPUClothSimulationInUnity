@@ -1,3 +1,17 @@
+#include "./DataStruct.cginc"
+
+RWStructuredBuffer<Particle> particles;
+RWStructuredBuffer<Edge> edges;
+RWStructuredBuffer<Triangle> triangeles;
+RWStructuredBuffer<NeighborTriangles> neighborTriangles;
+
+float deltaT;
+float damping;
+float eps = 1e-6f;
+
+float stretchStiffness;
+float compressionStiffness;
+
 void AtomicAddDelta(int indexIntoDeltaPos, float newDeltaVal, int axis)
 {
   uint i_val = asuint(newDeltaVal);

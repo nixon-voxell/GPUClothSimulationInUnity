@@ -1,4 +1,4 @@
-#define eps 1e-6f;
+#include "./Utilities.cginc"
 
 /*
 functions that handles:
@@ -81,11 +81,11 @@ bool DihedralConstraint(
 
   n1 = normalize(n1);
   n2 = normalize(n2);
-  float dot = dot(n1, n2);
+  float n1n2 = dot(n1, n2);
 
-  if (dot < -1.0f) dot = -1.0f;
-  if (dot >  1.0f) dot =  1.0f;
-  float phi = acos(dot);	
+  if (n1n2 < -1.0f) n1n2 = -1.0f;
+  if (n1n2 >  1.0f) n1n2 =  1.0f;
+  float phi = acos(n1n2);	
 
   // float phi = (-0.6981317 * dot * dot - 0.8726646) * dot + 1.570796;	// fast approximation
 

@@ -1,14 +1,4 @@
-#include "./DataStruct.cginc"
 #include "./PositionBasedDynamics.cginc"
-#include "./Utilities.cginc"
-
-RWStructuredBuffer<Particle> particles;
-RWStructuredBuffer<Edge> edge;
-RWStructuredBuffer<Triangle> triangeles;
-RWStructuredBuffer<NeighborTriangles> neighborTriangles;
-
-float deltaT;
-float damping;
 
 #define THREADS [numthreads(8, 1, 1)]
 
@@ -33,5 +23,36 @@ void SolveExternalForce(uint3 id: SV_DispatchThreadID)
     out corr))
   {
     particles[idx].predictedPos += corr;
+  }
+}
+
+#pragma kernel SolveDistanceConstraint
+THREADS
+void SolveDistanceConstraint(uint3 id: SV_DispatchThreadID)
+{
+  uint idx = id.x;
+
+  int e0 = edges[idx].p0;
+  int e1 = edges[idx].p1;
+  float restLength = edges[idx].restLength;
+
+  float3 p0 = particles[e0].predictedPos;
+  float3 p1 = particles[e1].predictedPos;
+  float w0 = particles[e0].invMass;
+  float w1 = particles[e1].invMass;
+
+  float3 corr0;
+  float3 corr1;
+  if (DistanceConstraint(
+    p0, w0,
+    p1, w1,
+    restLength,
+    stretchStiffness,
+    compressionStiffness,
+    out corr0,
+    out corr1))
+  {
+    particles[e0].predictedPos += corr0;
+    particles[e1].predictedPos += corr1;
   }
 }

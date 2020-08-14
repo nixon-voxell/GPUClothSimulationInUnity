@@ -103,7 +103,7 @@ public class CPUClothSimulation : MonoBehaviour
       Vector3 force = Vector3.zero;
       Vector3 corr;
       // add gravity acceleration
-      force += 1/meshData.particles[i].invMass * gravity;
+      force += gravity / meshData.particles[i].invMass;
       
       if (PBD.ExternalForce(
         dt,
