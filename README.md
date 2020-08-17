@@ -25,6 +25,7 @@ Support me on [Patreon](https://www.patreon.com/voxelltechnologies) so that I ca
 
 How to use?
 ---
+*Note: The GPU version is not fully developed yet, this tutorial section will not work for the GPU version.
 1. Create a mesh in [Blender](https://blender.org) that you want to simulate.
 2. Use my custom Blender Addon - [Cloth Exporter Tool](https://github.com/voxell-tech/ClothExporter) to transform your mesh into PBD form and export it into your Unity's `StreamingAssets` folder.
 3. Create an empty GameObject in Unity.
