@@ -7,12 +7,14 @@ THREADS
 void SolveExternalForce(uint3 id: SV_DispatchThreadID)
 {
   uint idx = id.x;
+  if (idx > totalParticles) return;
 
-  float3 p = particles[idx].predictedPos;
-  float3 v = particles[idx].velocity;
-  float w = particles[idx].invMass;
+  float3 p = predictedPos[idx];
+  float3 v = velocity[idx];
+  float w = invMass[idx];
+  float m = mass[idx];
 
-  float3 force = gravity / w;
+  float3 force = gravity * m;
 
   float3 corr;
   if (ExternalForce(
@@ -22,7 +24,7 @@ void SolveExternalForce(uint3 id: SV_DispatchThreadID)
     damping,
     corr))
   {
-    particles[idx].predictedPos += corr;
+    predictedPos[idx] += corr;
   }
 }
 
@@ -31,15 +33,16 @@ THREADS
 void SolveDistanceConstraint(uint3 id: SV_DispatchThreadID)
 {
   uint idx = id.x;
+  if (idx*2 + 1 > totalEdges) return;
 
-  int e0 = edges[idx].p0;
-  int e1 = edges[idx].p1;
-  float restLength = edges[idx].restLength;
+  int e0 = edges[idx*2];
+  int e1 = edges[idx*2 + 1];
+  float restLength = restLength[idx];
 
-  float3 p0 = particles[e0].predictedPos;
-  float3 p1 = particles[e1].predictedPos;
-  float w0 = particles[e0].invMass;
-  float w1 = particles[e1].invMass;
+  float3 p0 = predictedPos[e0];
+  float3 p1 = predictedPos[e1];
+  float w0 = invMass[e0];
+  float w1 = invMass[e1];
 
   float3 corr0;
   float3 corr1;
@@ -71,11 +74,12 @@ THREADS
 void SolveDihedralConstraint(uint3 id: SV_DispatchThreadID)
 {
   uint idx = id.x;
+  if (idx*4 + 3 > totalNeighborTriangles) return;
 
-  int t0 = neighborTriangles[idx].p0;
-  int t1 = neighborTriangles[idx].p1;
-  int t2 = neighborTriangles[idx].p2;
-  int t3 = neighborTriangles[idx].p3;
+  int t0 = neighborTriangles[idx*4];
+  int t1 = neighborTriangles[idx*4 + 1];
+  int t2 = neighborTriangles[idx*4 + 2];
+  int t3 = neighborTriangles[idx*4 + 3];
   float restAngle = neighborTriangles[idx].restAngle;
 
   float3 p0 = particles[t0].predictedPos;

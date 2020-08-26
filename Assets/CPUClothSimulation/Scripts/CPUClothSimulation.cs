@@ -80,6 +80,7 @@ public class CPUClothSimulation : MonoBehaviour
   void Start()
   {
     if (startSimulationOnPlay) simulate = true;
+    // pinned particles
     meshData.particles[264].invMass = 0;
     meshData.particles[0].invMass = 0;
   }
@@ -102,8 +103,8 @@ public class CPUClothSimulation : MonoBehaviour
     {
       Vector3 force = Vector3.zero;
       Vector3 corr;
-      // add gravity acceleration
-      force += gravity / meshData.particles[i].invMass;
+      // add gravity acceleration (f = ma)
+      force += gravity * meshData.particles[i].mass;
       
       if (PBD.ExternalForce(
         dt,

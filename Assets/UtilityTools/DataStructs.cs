@@ -12,6 +12,7 @@ namespace DataStruct
     public Vector3 predictedPos;
     public Vector3 velocity;
     public float invMass;
+    public float mass;
     public int idx;
     public int phase;
 
@@ -20,6 +21,7 @@ namespace DataStruct
       float[] _predictedPos,
       float[] _veloctiy,
       float _invMass,
+      float _mass,
       int _idx,
       int _phase)
     {
@@ -27,6 +29,7 @@ namespace DataStruct
       predictedPos = new Vector3(_predictedPos[0], _predictedPos[1], _predictedPos[2]);
       velocity = new Vector3(_veloctiy[0], _veloctiy[1], _veloctiy[2]);
       invMass = _invMass;
+      mass = _mass;
       idx = _idx;
       phase = _phase;
     }
