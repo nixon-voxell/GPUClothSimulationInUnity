@@ -1,6 +1,6 @@
 #include "./PositionBasedDynamics.cginc"
 
-#define THREADS [numthreads(8, 1, 1)]
+#define THREADS [numthreads(32, 1, 1)]
 
 #pragma kernel SolveExternalForce
 THREADS
@@ -20,7 +20,7 @@ void SolveExternalForce(uint3 id: SV_DispatchThreadID)
     p, v, w,
     force,
     damping,
-    out corr))
+    corr))
   {
     particles[idx].predictedPos += corr;
   }
@@ -49,10 +49,17 @@ void SolveDistanceConstraint(uint3 id: SV_DispatchThreadID)
     restLength,
     stretchStiffness,
     compressionStiffness,
-    out corr0,
-    out corr1))
+    corr0,
+    corr1))
   {
     particles[e0].predictedPos += corr0;
     particles[e1].predictedPos += corr1;
   }
+}
+
+#pragma kernel SolveDihedralConstraint
+THREADS
+void SolveDihedralConstraint(uint3 id: SV_DispatchThreadID)
+{
+  // 
 }

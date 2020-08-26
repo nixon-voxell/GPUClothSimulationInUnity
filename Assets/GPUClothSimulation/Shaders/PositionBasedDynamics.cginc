@@ -13,7 +13,7 @@ bool ExternalForce(
   out float3 corr)
 {
   corr = float3(0, 0, 0);
-  if (w == 0.0f) return false;
+  if (w < EPSILON) return false;
   
   v += dt * w * force * damping;
   corr = dt * v;
@@ -31,19 +31,15 @@ bool DistanceConstraint(
 {
   corr0 = corr1 = float3(0, 0, 0);
   float wSum = w0 + w1;
-  if (wSum == 0.0f) return false;
+  if (wSum < EPSILON) return false;
 
   float3 n = p0 - p1;
   float d = length(n);
+  n = normalize(n);
 
   float3 corr;
-  if (d < restLength)
-  {
-    corr = compressionStiffness * n * (d - restLength) / wSum;
-  } else
-  {
-    corr = stretchStiffness * n * (d - restLength) / wSum;
-  }
+  if (d < restLength) corr = compressionStiffness * n * (d - restLength) / wSum;
+  else corr = stretchStiffness * n * (d - restLength) / wSum;
 
   corr0 = -w0 * corr;
   corr1 = w1 * corr;
@@ -67,7 +63,7 @@ bool DihedralConstraint(
 
   float3 e = p3 - p2;
   float elen = length(e);
-  if (elen < eps) return false;
+  if (elen < EPSILON) return false;
 
   float invElen = 1 / elen;
 
@@ -95,7 +91,7 @@ bool DihedralConstraint(
     w2 * dot(d2, d2) +
     w3 * dot(d3, d3);
 
-  if (lambda == 0.0f) return false;	
+  if (lambda > -EPSILON && lambda < EPSILON) return false;	
 
   // stability
   // 1.5 is the largest magic number I found to be stable in all cases :-)
@@ -104,7 +100,7 @@ bool DihedralConstraint(
 
   lambda = (phi - restAngle) / lambda * stiffness;
 
-  if (dot(cross(n1, n2), e) > 0.0f) lambda = -lambda;	
+  if (dot(cross(n1, n2), e) > EPSILON) lambda = -lambda;	
 
   corr0 = - w0 * lambda * d0;
   corr1 = - w1 * lambda * d1;
@@ -144,7 +140,7 @@ bool VolumeConstraint(
     w3 * dot(grad3, grad3);
 
   float l = lambda < 0.0f ? -lambda : lambda;
-  if (l < eps) return false;
+  if (l < EPSILON) return false;
 
   if (volume < 0.0f) lambda = negVolumeStiffness * (volume - restVolume) / lambda;
   else lambda = posVolumeStiffness * (volume - restVolume) / lambda;
@@ -172,7 +168,7 @@ bool EdgePointDistanceConstraint(
 
   float3 d = p1 - p0;
   float t;
-  if (dot((p0 - p1), (p0 - p1)) < eps * eps) t = 0.5f;
+  if (dot((p0 - p1), (p0 - p1)) < EPSILON * EPSILON) t = 0.5f;
   else
   {
     float d2 = dot(d, d);

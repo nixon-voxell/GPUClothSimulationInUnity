@@ -12,7 +12,6 @@ struct Edge
 {
   int p0;
   int p1;
-  int p2;
   float restLength;
   int idx;
 };
@@ -33,3 +32,19 @@ struct NeighborTriangles
   int p3;
   float restAngle;
 };
+
+RWStructuredBuffer<Particle> particles;
+RWStructuredBuffer<Edge> edges;
+RWStructuredBuffer<Triangle> triangeles;
+RWStructuredBuffer<NeighborTriangles> neighborTriangles;
+RWStructuredBuffer<uint3> deltaPosAsInt;
+RWStructuredBuffer<int> deltaCount;
+
+float deltaT;
+float damping;
+float gravity;
+static const uint MAX_VERTICES_PER_BIN = 32;
+static const float EPSILON = 0.00001;
+
+float stretchStiffness;
+float compressionStiffness;

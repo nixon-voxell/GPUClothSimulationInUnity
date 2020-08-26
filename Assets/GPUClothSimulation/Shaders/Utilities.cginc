@@ -1,17 +1,5 @@
 #include "./DataStruct.cginc"
 
-RWStructuredBuffer<Particle> particles;
-RWStructuredBuffer<Edge> edges;
-RWStructuredBuffer<Triangle> triangeles;
-RWStructuredBuffer<NeighborTriangles> neighborTriangles;
-
-float deltaT;
-float damping;
-float eps = 1e-6f;
-
-float stretchStiffness;
-float compressionStiffness;
-
 void AtomicAddDelta(int indexIntoDeltaPos, float newDeltaVal, int axis)
 {
   uint i_val = asuint(newDeltaVal);
@@ -30,12 +18,4 @@ void AtomicAddDelta(int indexIntoDeltaPos, float newDeltaVal, int axis)
   }
 
   return;
-}
-
-float RemapFloat(float start, float end, float newStart, float newEnd, float val)
-{
-  float originalDiff = end - start;
-  float newDiff = newEnd - newStart;
-  float percentage = val/originalDiff;
-  return percentage * newDiff + newStart;
 }

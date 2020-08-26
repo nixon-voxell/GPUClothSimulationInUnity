@@ -50,6 +50,7 @@ namespace PositionBasedDynamics
 
       Vector3 n = p0 - p1;
       float d = n.magnitude;
+      Vector3.Normalize(n);
 
       Vector3 corr;
       if (d < restLength)
