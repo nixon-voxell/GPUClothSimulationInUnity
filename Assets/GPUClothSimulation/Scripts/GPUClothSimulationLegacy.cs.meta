@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 2dea6c8f08b4af84f9643cc746d7d0a0
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - mesh: {instanceID: 0}
+  - frontMat: {fileID: 2100000, guid: 2e4675b0919018f49951c7bd638e9ee3, type: 2}
+  - backMat: {fileID: 2100000, guid: 41dd5f661a1df694abdb1236dd89dabc, type: 2}
+  - PBDClothSolver: {fileID: 7200000, guid: a625bdce07e4dcc42b23c2d549862493, type: 3}
+  - skinnedMeshCollider: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

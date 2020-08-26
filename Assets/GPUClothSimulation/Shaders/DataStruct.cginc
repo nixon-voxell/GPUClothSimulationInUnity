@@ -48,3 +48,4 @@ static const float EPSILON = 0.00001;
 
 float stretchStiffness;
 float compressionStiffness;
+float bendingStiffness;

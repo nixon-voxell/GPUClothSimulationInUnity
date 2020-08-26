@@ -1,6 +1,6 @@
 #include "./PositionBasedDynamics.cginc"
 
-#define THREADS [numthreads(32, 1, 1)]
+#define THREADS [numthreads(512, 1, 1)]
 
 #pragma kernel SolveExternalForce
 THREADS
@@ -49,11 +49,20 @@ void SolveDistanceConstraint(uint3 id: SV_DispatchThreadID)
     restLength,
     stretchStiffness,
     compressionStiffness,
-    corr0,
-    corr1))
+    corr0, corr1))
   {
-    particles[e0].predictedPos += corr0;
-    particles[e1].predictedPos += corr1;
+    // particles[e0].predictedPos += corr0;
+    // particles[e1].predictedPos += corr1;
+    AtomicAddDelta(e0, corr0.x, 0);
+    AtomicAddDelta(e0, corr0.y, 1);
+    AtomicAddDelta(e0, corr0.z, 2);
+
+    AtomicAddDelta(e1, corr1.x, 0);
+    AtomicAddDelta(e1, corr1.y, 1);
+    AtomicAddDelta(e1, corr1.z, 2);
+
+    InterlockedAdd(deltaCount[e0], 1);
+    InterlockedAdd(deltaCount[e1], 1);
   }
 }
 
@@ -61,5 +70,55 @@ void SolveDistanceConstraint(uint3 id: SV_DispatchThreadID)
 THREADS
 void SolveDihedralConstraint(uint3 id: SV_DispatchThreadID)
 {
-  // 
+  uint idx = id.x;
+
+  int t0 = neighborTriangles[idx].p0;
+  int t1 = neighborTriangles[idx].p1;
+  int t2 = neighborTriangles[idx].p2;
+  int t3 = neighborTriangles[idx].p3;
+  float restAngle = neighborTriangles[idx].restAngle;
+
+  float3 p0 = particles[t0].predictedPos;
+  float3 p1 = particles[t1].predictedPos;
+  float3 p2 = particles[t2].predictedPos;
+  float3 p3 = particles[t3].predictedPos;
+  float w0 = particles[t0].invMass;
+  float w1 = particles[t1].invMass;
+  float w2 = particles[t2].invMass;
+  float w3 = particles[t3].invMass;
+
+  float3 corr0;
+  float3 corr1;
+  float3 corr2;
+  float3 corr3;
+  if (DihedralConstraint(
+    p0, w0,
+    p1, w1,
+    p2, w2,
+    p3, w3,
+    restAngle,
+    bendingStiffness,
+    corr0, corr1, corr2, corr3))
+  {
+    AtomicAddDelta(t0, corr0.x, 0);
+    AtomicAddDelta(t0, corr0.y, 1);
+    AtomicAddDelta(t0, corr0.z, 2);
+
+    AtomicAddDelta(t1, corr1.x, 0);
+    AtomicAddDelta(t1, corr1.y, 1);
+    AtomicAddDelta(t1, corr1.z, 2);
+
+    AtomicAddDelta(t2, corr2.x, 0);
+    AtomicAddDelta(t2, corr2.y, 1);
+    AtomicAddDelta(t2, corr2.z, 2);
+
+    AtomicAddDelta(t3, corr3.x, 0);
+    AtomicAddDelta(t3, corr3.y, 1);
+    AtomicAddDelta(t3, corr3.z, 2);
+
+    InterlockedAdd(deltaCount[t0], 1);
+    InterlockedAdd(deltaCount[t1], 1);
+    InterlockedAdd(deltaCount[t2], 1);
+    InterlockedAdd(deltaCount[t3], 1);
+  }
 }
