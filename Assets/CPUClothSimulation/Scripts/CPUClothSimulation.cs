@@ -96,6 +96,15 @@ public class CPUClothSimulation : MonoBehaviour
     }
   }
 
+  void FixedUpdate()
+  {
+    // if (simulate)
+    // {
+    //   SimulateOneTimeStep(deltaTimeStep);
+    //   UpdateDataToMesh(deltaTimeStep);
+    // }
+  }
+
   public void SimulateOneTimeStep(float dt)
   {
     #region Apply External Force

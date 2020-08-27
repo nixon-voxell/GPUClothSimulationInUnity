@@ -76,13 +76,24 @@ public class GPUClothSimulation : MonoBehaviour
 
   #region Compute Buffers
   ComputeBuffer pos;
-  ComputeBuffer projectedPos;
-  ComputeBuffer velocities;
-  ComputeBuffer deltaPositions;
-  ComputeBuffer deltaPositionsUInt;
+  ComputeBuffer predictedPos;
+  ComputeBuffer velocity;
+  ComputeBuffer mass;
+  ComputeBuffer invMass;
+  ComputeBuffer edge;
+  ComputeBuffer restLength;
+  ComputeBuffer neighborTriangle;
+  ComputeBuffer restAngle;
+  ComputeBuffer tri;
+  ComputeBuffer deltaPosUint;
   ComputeBuffer deltaCount;
-  ComputeBuffer edges;
-  ComputeBuffer neighborTriangles;
+  #endregion
+
+  #region Kernels
+  int SolveExternalForce;
+  int SolveDistanceConstraint;
+  int SolveDihedralConstraint;
+  int AverageConstraintDeltas;
   #endregion
 
   void Start()
@@ -139,8 +150,87 @@ public class GPUClothSimulation : MonoBehaviour
     childMesh.RecalculateNormals();
   }
 
-  public void PushParametersToGPU()
+  #region GPU Kernel & Buffer Initialization
+  void InitKernels()
   {
-    // 
+    SolveExternalForce = clothSolver.FindKernel("SolveExternalForce");
+    SolveDistanceConstraint = clothSolver.FindKernel("SolveDistanceConstraint");
+    SolveDihedralConstraint = clothSolver.FindKernel("SolveDihedralConstraint");
+    AverageConstraintDeltas = clothSolver.FindKernel("AverageConstraintDeltas");
   }
+
+  void InitBuffers()
+  {
+    // strides
+    int strideFloat3 = System.Runtime.InteropServices.Marshal.SizeOf(typeof(float)) * 3;
+    int strideFloat = System.Runtime.InteropServices.Marshal.SizeOf(typeof(float));
+    int strideInt = System.Runtime.InteropServices.Marshal.SizeOf(typeof(int));
+    int strideUint3 = System.Runtime.InteropServices.Marshal.SizeOf(typeof(uint)) * 3;
+
+    // compute buffers
+    pos = new ComputeBuffer(totalVerts, strideFloat3);
+    predictedPos = new ComputeBuffer(totalVerts, strideFloat3);
+    velocity = new ComputeBuffer(totalVerts, strideFloat3);
+    mass = new ComputeBuffer(totalVerts, strideFloat);
+    invMass = new ComputeBuffer(totalVerts, strideFloat);
+    edge = new ComputeBuffer(totalEdges * 2, strideInt);
+    restLength = new ComputeBuffer(totalEdges, strideFloat);
+    neighborTriangle = new ComputeBuffer(totalNeighborTriangles * 4, strideInt);
+    restAngle = new ComputeBuffer(totalNeighborTriangles, strideFloat);
+    tri = new ComputeBuffer(totalTriangles * 3, strideInt);
+    deltaPosUint = new ComputeBuffer(totalVerts, strideUint3);
+    deltaCount = new ComputeBuffer(totalVerts, strideInt);
+  }
+  #endregion
+
+  #region Set GPU Variables
+  void SetGPUConstants()
+  {
+    clothSolver.SetFloat("deltaT", deltaTimeStep);
+    clothSolver.SetInt("totalVerts", totalVerts);
+    clothSolver.SetInt("totalEdges", totalEdges);
+    clothSolver.SetInt("totalTriangles", totalTriangles);
+    clothSolver.SetInt("totalNeighborTriangles", totalNeighborTriangles);
+  }
+
+  void SetGPUParameters()
+  {
+    clothSolver.SetFloat("damping", damping);
+    clothSolver.SetVector("gravity", gravity);
+    clothSolver.SetFloat("stretchStiffness", stretchStiffness);
+    clothSolver.SetFloat("compressionStiffness", compressionStiffness);
+    clothSolver.SetFloat("bendingStiffness", bendingStiffness);
+    clothSolver.SetFloat("thickness", thickness);
+  }
+
+  void SetGPUBuffers()
+  {
+    // SolveExternalForce
+    clothSolver.SetBuffer(SolveExternalForce, "predictedPos", predictedPos);
+    clothSolver.SetBuffer(SolveExternalForce, "velocity", velocity);
+    clothSolver.SetBuffer(SolveExternalForce, "invMass", invMass);
+    clothSolver.SetBuffer(SolveExternalForce, "mass", mass);
+
+    // SolveDistanceConstraint
+    clothSolver.SetBuffer(SolveDistanceConstraint, "predictedPos", predictedPos);
+    clothSolver.SetBuffer(SolveDistanceConstraint, "invMass", invMass);
+    clothSolver.SetBuffer(SolveDistanceConstraint, "edge", edge);
+    clothSolver.SetBuffer(SolveDistanceConstraint, "restLength", restLength);
+    clothSolver.SetBuffer(SolveDistanceConstraint, "deltaPosUint", deltaPosUint);
+    clothSolver.SetBuffer(SolveDistanceConstraint, "deltaCount", deltaCount);
+
+    // SolveDihedralConstraint
+    clothSolver.SetBuffer(SolveDihedralConstraint, "predictedPos", predictedPos);
+    clothSolver.SetBuffer(SolveDihedralConstraint, "invMass", invMass);
+    clothSolver.SetBuffer(SolveDihedralConstraint, "neighborTriangle", neighborTriangle);
+    clothSolver.SetBuffer(SolveDihedralConstraint, "restAngle", restAngle);
+    clothSolver.SetBuffer(SolveDihedralConstraint, "deltaPosUint", deltaPosUint);
+    clothSolver.SetBuffer(SolveDihedralConstraint, "deltaCount", deltaCount);
+
+    // AverageConstraintDeltas
+    clothSolver.SetBuffer(AverageConstraintDeltas, "predictedPos", predictedPos);
+    clothSolver.SetBuffer(AverageConstraintDeltas, "deltaPosUint", deltaPosUint);
+    clothSolver.SetBuffer(AverageConstraintDeltas, "deltaCount", deltaCount);
+  }
+  #endregion
 }

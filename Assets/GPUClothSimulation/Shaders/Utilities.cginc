@@ -9,7 +9,7 @@ void AtomicAddDelta(int indexIntoDeltaPos, float newDeltaVal, int axis)
   [allow_uav_condition]
   while (true)
   {
-    InterlockedCompareExchange(deltaPosAsInt[indexIntoDeltaPos][axis], tmp0, i_val, tmp1);
+    InterlockedCompareExchange(deltaPosAsUint[indexIntoDeltaPos][axis], tmp0, i_val, tmp1);
 
     if (tmp1 == tmp0) break;
 

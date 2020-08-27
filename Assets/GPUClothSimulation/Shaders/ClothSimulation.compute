@@ -35,9 +35,9 @@ void SolveDistanceConstraint(uint3 id: SV_DispatchThreadID)
   uint idx = id.x;
   if (idx*2 + 1 > totalEdges) return;
 
-  int e0 = edges[idx*2];
-  int e1 = edges[idx*2 + 1];
-  float restLength = restLengths[idx];
+  int e0 = edge[idx*2];
+  int e1 = edge[idx*2 + 1];
+  float r = restLength[idx];
 
   float3 p0 = predictedPos[e0];
   float3 p1 = predictedPos[e1];
@@ -49,7 +49,7 @@ void SolveDistanceConstraint(uint3 id: SV_DispatchThreadID)
   if (DistanceConstraint(
     p0, w0,
     p1, w1,
-    restLength,
+    r,
     stretchStiffness,
     compressionStiffness,
     corr0, corr1))
@@ -76,11 +76,11 @@ void SolveDihedralConstraint(uint3 id: SV_DispatchThreadID)
   uint idx = id.x;
   if (idx*4 + 3 > totalNeighborTriangles) return;
 
-  int t0 = neighborTriangles[idx*4];
-  int t1 = neighborTriangles[idx*4 + 1];
-  int t2 = neighborTriangles[idx*4 + 2];
-  int t3 = neighborTriangles[idx*4 + 3];
-  float restAngle = restAngles[idx];
+  int t0 = neighborTriangle[idx*4];
+  int t1 = neighborTriangle[idx*4 + 1];
+  int t2 = neighborTriangle[idx*4 + 2];
+  int t3 = neighborTriangle[idx*4 + 3];
+  float r = restAngle[idx];
 
   float3 p0 = predictedPos[t0];
   float3 p1 = predictedPos[t1];
@@ -100,7 +100,7 @@ void SolveDihedralConstraint(uint3 id: SV_DispatchThreadID)
     p1, w1,
     p2, w2,
     p3, w3,
-    restAngle,
+    r,
     bendingStiffness,
     corr0, corr1, corr2, corr3))
   {
@@ -125,4 +125,26 @@ void SolveDihedralConstraint(uint3 id: SV_DispatchThreadID)
     InterlockedAdd(deltaCount[t2], 1);
     InterlockedAdd(deltaCount[t3], 1);
   }
+}
+
+#pragma kernel AverageConstraintDeltas
+THREADS
+void AverageConstraintDeltas(uint3 id : SV_DispatchThreadID)
+{
+  uint idx = id.x;
+
+  if (deltaCount[idx] > EPSILON)
+  {
+    float3 deltaPos;
+    deltaPos.x = asfloat(deltaPosAsUint[idx].x);
+    deltaPos.y = asfloat(deltaPosAsUint[idx].y);
+    deltaPos.z = asfloat(deltaPosAsUint[idx].z);
+
+    deltaPos /= deltaCount[idx];
+    predictedPos[idx] += deltaPos * 1.5;
+  }
+
+  // reset delta buffers to zero
+  deltaPosAsUint[idx] = uint3(0, 0, 0);
+  deltaCount[idx] = 0;
 }

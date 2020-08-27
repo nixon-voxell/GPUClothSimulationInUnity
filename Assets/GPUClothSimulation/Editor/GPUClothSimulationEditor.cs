@@ -21,7 +21,8 @@ public class GPUClothSimulationEditor : Editor
   void OnEnable()
   {
     clothSim = (GPUClothSimulation)target;
-    boldTextStyle.normal.textColor = Color.black;
+    if (EditorGUIUtility.isProSkin) boldTextStyle.normal.textColor = new Color(1, 1, 1, 0.8f);
+    else boldTextStyle.normal.textColor = Color.black;
     boldTextStyle.fontStyle = FontStyle.Bold;
   }
 
@@ -30,8 +31,6 @@ public class GPUClothSimulationEditor : Editor
     if (clothSim.gridSize > 0) clothSim.invGridSize = 1.0f / clothSim.gridSize;
     else clothSim.gridSize = 0;
 
-    GUI.backgroundColor = new Color(0, 0, 0, 0.1f);
-    GUILayout.BeginVertical("box");
     GUILayout.Label("Initializaion", boldTextStyle);
 
     // JSON
@@ -46,7 +45,7 @@ public class GPUClothSimulationEditor : Editor
     }
 
     // build front mesh
-    GUI.backgroundColor = Color.magenta * new Color(1f, 1f, 1f, 0.7f);
+    GUI.backgroundColor = Color.magenta;
     if (clothSim.mesh == null)
     {
       if (GUILayout.Button("Build Mesh")) BuildMesh();
@@ -59,7 +58,7 @@ public class GPUClothSimulationEditor : Editor
     GUILayout.Space(10);
 
     // Create mesh for the other side
-    GUI.backgroundColor = Color.magenta * new Color(1f, 1f, 1f, 0.7f);
+    GUI.backgroundColor = Color.magenta;
     if (clothSim.transform.childCount == 0)
     {
       if (GUILayout.Button("Create Back Side"))
@@ -101,7 +100,7 @@ public class GPUClothSimulationEditor : Editor
     // allow user to control if we want to start or stop stimulating the cloth in play mode
     if (clothSim.simulate)
     {
-      GUI.backgroundColor = Color.red * new Color(1f, 1f, 1f, 0.5f);
+      GUI.backgroundColor = Color.red;
       if (GUILayout.Button("Stop Simulation"))
       {
         clothSim.simulate = false;
@@ -120,7 +119,6 @@ public class GPUClothSimulationEditor : Editor
     {
       LoadDataFromJson(); BuildMesh(); BuildBackSide();
     }
-    GUILayout.EndVertical();
   }
 
   #region Button Functions
@@ -175,6 +173,7 @@ public class GPUClothSimulationEditor : Editor
       clothSim.mesh.SetVertices(meshVerts);
       clothSim.mesh.SetTriangles(meshTriangles, 0);
       clothSim.mesh.RecalculateNormals();
+      clothSim.mesh.MarkDynamic();
       clothSim.mesh.name = clothSim.path.Split('/')[clothSim.path.Split('/').Length-1].Split('.')[0];
 
       clothSim.GetComponent<MeshFilter>().sharedMesh = clothSim.mesh;

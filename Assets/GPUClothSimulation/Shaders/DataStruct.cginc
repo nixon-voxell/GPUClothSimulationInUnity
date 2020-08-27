@@ -39,31 +39,37 @@
 // RWStructuredBuffer<Triangle> triangeles;
 // RWStructuredBuffer<NeighborTriangles> neighborTriangles;
 
+
+// We use AoS instead of SoA (which is shown above)
+
 RWStructuredBuffer<float3> pos;
 RWStructuredBuffer<float3> predictedPos;
 RWStructuredBuffer<float3> velocity;
 RWStructuredBuffer<float> mass;
 RWStructuredBuffer<float> invMass;
 
-StructuredBuffer<int> edges;
-StructuredBuffer<float> restLengths;
+StructuredBuffer<int> edge;
+StructuredBuffer<float> restLength;
 
-StructuredBuffer<int> neighborTriangles;
-StructuredBuffer<float> restAngles;
+StructuredBuffer<int> neighborTriangle;
+StructuredBuffer<float> restAngle;
 
-RWStructuredBuffer<uint3> deltaPosAsInt;
+StructuredBuffer<int> tri;
+
+RWStructuredBuffer<uint3> deltaPosAsUint;
 RWStructuredBuffer<int> deltaCount;
 
 float deltaT;
-float damping;
-float gravity;
 static const uint MAX_VERTICES_PER_BIN = 32;
 static const float EPSILON = 0.00001;
 
 uint totalVerts;
 uint totalEdges;
+uint totalTriangles;
 uint totalNeighborTriangles;
 
+float damping;
+float3 gravity;
 float stretchStiffness;
 float compressionStiffness;
 float bendingStiffness;
