@@ -38,6 +38,7 @@ public class GPUClothSimulation : MonoBehaviour
 
   #region Cloth Simulation Parameters
   [Header("Cloth Simulation Parameters")]
+  public ComputeShader clothSolver;
   public Vector3 gravity = new Vector3(0, -9.81f, 0);
   [Range(0, 1)]
   public float compressionStiffness = 1;
@@ -71,6 +72,17 @@ public class GPUClothSimulation : MonoBehaviour
   [HideInInspector]
   public bool simulate = false;
   float timePassed = 0;
+  #endregion
+
+  #region Compute Buffers
+  ComputeBuffer pos;
+  ComputeBuffer projectedPos;
+  ComputeBuffer velocities;
+  ComputeBuffer deltaPositions;
+  ComputeBuffer deltaPositionsUInt;
+  ComputeBuffer deltaCount;
+  ComputeBuffer edges;
+  ComputeBuffer neighborTriangles;
   #endregion
 
   void Start()
@@ -125,5 +137,10 @@ public class GPUClothSimulation : MonoBehaviour
     mesh.RecalculateNormals();
     childMesh.SetVertices(meshVerts);
     childMesh.RecalculateNormals();
+  }
+
+  public void PushParametersToGPU()
+  {
+    // 
   }
 }

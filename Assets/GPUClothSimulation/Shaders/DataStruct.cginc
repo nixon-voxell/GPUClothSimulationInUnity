@@ -60,7 +60,7 @@ float gravity;
 static const uint MAX_VERTICES_PER_BIN = 32;
 static const float EPSILON = 0.00001;
 
-int totalParticles;
+int totalVerts;
 int totalEdges;
 int totalNeighborTriangles;
 

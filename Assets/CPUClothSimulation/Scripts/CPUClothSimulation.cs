@@ -118,63 +118,63 @@ public class CPUClothSimulation : MonoBehaviour
     #endregion
 
     #region Collision Constraints
-    // SH sh = new SH(gridSize, invGridSize, tableSize);
-    // SPHash[] spHash = new SPHash[tableSize];
+    SH sh = new SH(gridSize, invGridSize, tableSize);
+    SPHash[] spHash = new SPHash[tableSize];
 
-    // for (int v=0; v < totalVerts; v++)
-    // {
-    //   int hash = Mathf.Abs(sh.Hash(meshData.particles[v].predictedPos));
-    //   if (spHash[hash].indices == null) spHash[hash].indices = new List<int>();
-    //   spHash[hash].indices.Add(meshData.particles[v].idx);
-    // }
+    for (int v=0; v < totalVerts; v++)
+    {
+      int hash = Mathf.Abs(sh.Hash(meshData.particles[v].predictedPos));
+      if (spHash[hash].indices == null) spHash[hash].indices = new List<int>();
+      spHash[hash].indices.Add(meshData.particles[v].idx);
+    }
 
-    // for (int t=0; t < totalTriangles; t++)
-    // {
-    //   Triangle tri = meshData.triangles[t];
-    //   Vector3 p0 = meshData.particles[tri.p0].predictedPos;
-    //   Vector3 p1 = meshData.particles[tri.p1].predictedPos;
-    //   Vector3 p2 = meshData.particles[tri.p2].predictedPos;
+    for (int t=0; t < totalTriangles; t++)
+    {
+      Triangle tri = meshData.triangles[t];
+      Vector3 p0 = meshData.particles[tri.p0].predictedPos;
+      Vector3 p1 = meshData.particles[tri.p1].predictedPos;
+      Vector3 p2 = meshData.particles[tri.p2].predictedPos;
 
-    //   float w0 = meshData.particles[tri.p0].invMass;
-    //   float w1 = meshData.particles[tri.p1].invMass;
-    //   float w2 = meshData.particles[tri.p2].invMass;
+      float w0 = meshData.particles[tri.p0].invMass;
+      float w1 = meshData.particles[tri.p1].invMass;
+      float w2 = meshData.particles[tri.p2].invMass;
 
-    //   List<int> hashes = sh.TriangleBoundingBoxHashes(p0, p1, p2);
+      List<int> hashes = sh.TriangleBoundingBoxHashes(p0, p1, p2);
 
-    //   for (int h=0; h < hashes.Count; h++)
-    //   {
-    //     if (spHash[h].indices != null)
-    //     {
-    //       for (int sph=0; sph < spHash[h].indices.Count ; sph++)
-    //       {
-    //         int idx = spHash[h].indices[sph];
-    //         if (
-    //           idx != meshData.particles[tri.p0].idx &&
-    //           idx != meshData.particles[tri.p1].idx &&
-    //           idx != meshData.particles[tri.p2].idx)
-    //         {
-    //           Vector3 p = meshData.particles[idx].predictedPos;
-    //           float w = meshData.particles[idx].invMass;
+      for (int h=0; h < hashes.Count; h++)
+      {
+        if (spHash[h].indices != null)
+        {
+          for (int sph=0; sph < spHash[h].indices.Count ; sph++)
+          {
+            int idx = spHash[h].indices[sph];
+            if (
+              idx != meshData.particles[tri.p0].idx &&
+              idx != meshData.particles[tri.p1].idx &&
+              idx != meshData.particles[tri.p2].idx)
+            {
+              Vector3 p = meshData.particles[idx].predictedPos;
+              float w = meshData.particles[idx].invMass;
 
-    //           Vector3 corr, corr0, corr1, corr2;
-    //           if (PBD.TrianglePointDistanceConstraint(
-    //             p, w,
-    //             p0, w0,
-    //             p1, w1,
-    //             p2, w2,
-    //             thickness, 1f, 0.0f,
-    //             out corr, out corr0, out corr1, out corr2))
-    //           {
-    //             meshData.particles[idx].predictedPos += corr;
-    //             meshData.particles[tri.p0].predictedPos += corr0;
-    //             meshData.particles[tri.p1].predictedPos += corr1;
-    //             meshData.particles[tri.p2].predictedPos += corr2;
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
+              Vector3 corr, corr0, corr1, corr2;
+              if (PBD.TrianglePointDistanceConstraint(
+                p, w,
+                p0, w0,
+                p1, w1,
+                p2, w2,
+                thickness, 1f, 0.0f,
+                out corr, out corr0, out corr1, out corr2))
+              {
+                meshData.particles[idx].predictedPos += corr;
+                meshData.particles[tri.p0].predictedPos += corr0;
+                meshData.particles[tri.p1].predictedPos += corr1;
+                meshData.particles[tri.p2].predictedPos += corr2;
+              }
+            }
+          }
+        }
+      }
+    }
     #endregion
 
     #region Project Constraints
