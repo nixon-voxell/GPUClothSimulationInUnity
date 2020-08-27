@@ -37,7 +37,7 @@ void SolveDistanceConstraint(uint3 id: SV_DispatchThreadID)
 
   int e0 = edges[idx*2];
   int e1 = edges[idx*2 + 1];
-  float restLength = restLength[idx];
+  float restLength = restLengths[idx];
 
   float3 p0 = predictedPos[e0];
   float3 p1 = predictedPos[e1];
@@ -80,16 +80,16 @@ void SolveDihedralConstraint(uint3 id: SV_DispatchThreadID)
   int t1 = neighborTriangles[idx*4 + 1];
   int t2 = neighborTriangles[idx*4 + 2];
   int t3 = neighborTriangles[idx*4 + 3];
-  float restAngle = neighborTriangles[idx].restAngle;
+  float restAngle = restAngles[idx];
 
-  float3 p0 = particles[t0].predictedPos;
-  float3 p1 = particles[t1].predictedPos;
-  float3 p2 = particles[t2].predictedPos;
-  float3 p3 = particles[t3].predictedPos;
-  float w0 = particles[t0].invMass;
-  float w1 = particles[t1].invMass;
-  float w2 = particles[t2].invMass;
-  float w3 = particles[t3].invMass;
+  float3 p0 = predictedPos[t0];
+  float3 p1 = predictedPos[t1];
+  float3 p2 = predictedPos[t2];
+  float3 p3 = predictedPos[t3];
+  float w0 = invMass[t0];
+  float w1 = invMass[t1];
+  float w2 = invMass[t2];
+  float w3 = invMass[t3];
 
   float3 corr0;
   float3 corr1;

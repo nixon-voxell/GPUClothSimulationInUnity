@@ -46,10 +46,10 @@ RWStructuredBuffer<float> mass;
 RWStructuredBuffer<float> invMass;
 
 StructuredBuffer<int> edges;
-StructuredBuffer<float> restLength;
+StructuredBuffer<float> restLengths;
 
 StructuredBuffer<int> neighborTriangles;
-StructuredBuffer<float> restAngle;
+StructuredBuffer<float> restAngles;
 
 RWStructuredBuffer<uint3> deltaPosAsInt;
 RWStructuredBuffer<int> deltaCount;
@@ -60,9 +60,9 @@ float gravity;
 static const uint MAX_VERTICES_PER_BIN = 32;
 static const float EPSILON = 0.00001;
 
-int totalVerts;
-int totalEdges;
-int totalNeighborTriangles;
+uint totalVerts;
+uint totalEdges;
+uint totalNeighborTriangles;
 
 float stretchStiffness;
 float compressionStiffness;
