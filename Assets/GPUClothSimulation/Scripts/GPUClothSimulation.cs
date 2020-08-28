@@ -75,18 +75,7 @@ public class GPUClothSimulation : MonoBehaviour
   #endregion
 
   #region Compute Buffers
-  ComputeBuffer pos;
-  ComputeBuffer predictedPos;
-  ComputeBuffer velocity;
-  ComputeBuffer mass;
-  ComputeBuffer invMass;
-  ComputeBuffer edge;
-  ComputeBuffer restLength;
-  ComputeBuffer neighborTriangle;
-  ComputeBuffer restAngle;
-  ComputeBuffer tri;
-  ComputeBuffer deltaPosUint;
-  ComputeBuffer deltaCount;
+  ComputeBuffer pos, predictedPos, velocity, mass, invMass, edge, restLength, neighborTriangle, restAngle, tri, deltaPosUint, deltaCount;
   #endregion
 
   #region Kernels

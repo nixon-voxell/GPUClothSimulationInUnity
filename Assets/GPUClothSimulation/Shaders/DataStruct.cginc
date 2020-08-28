@@ -40,7 +40,7 @@
 // RWStructuredBuffer<NeighborTriangles> neighborTriangles;
 
 
-// We use AoS instead of SoA (which is shown above)
+// We use SoA instead of AoS (which is shown above)
 
 RWStructuredBuffer<float3> pos;
 RWStructuredBuffer<float3> predictedPos;

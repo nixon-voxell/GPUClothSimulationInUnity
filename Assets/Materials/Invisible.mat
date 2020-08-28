@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Invisible
-  m_Shader: {fileID: 4800000, guid: 016b469cb1d6f4d49946a2db54c241f7, type: 3}
+  m_Shader: {fileID: 4800000, guid: 0324d6a6299ae2745933f91bb29b9732, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -26,3 +26,4 @@ Material:
     m_Floats:
     - _Invisible: 1
     m_Colors: []
+  m_BuildTextureStacks: []
