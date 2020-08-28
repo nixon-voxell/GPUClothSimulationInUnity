@@ -30,7 +30,8 @@ namespace PositionBasedDynamics
       corr = Vector3.zero;
       if (w == 0.0f) return false;
 
-      v += dt * w * force * damping;
+      v += dt * w * force;
+      v *= damping;
       corr = dt * v;
       return true;
     }

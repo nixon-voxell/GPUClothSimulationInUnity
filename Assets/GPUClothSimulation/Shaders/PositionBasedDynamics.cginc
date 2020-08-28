@@ -15,7 +15,8 @@ bool ExternalForce(
   corr = float3(0, 0, 0);
   if (w < EPSILON) return false;
   
-  v += dt * w * force * damping;
+  v += dt * w * force;
+  v *= damping;
   corr = dt * v;
   return true;
 }
