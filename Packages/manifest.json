@@ -8,7 +8,6 @@
     "com.unity.textmeshpro": "3.0.1",
     "com.unity.timeline": "1.3.4",
     "com.unity.ugui": "1.0.0",
-    "me.voxell.gpu-cloth-simulation": "file:../Assets",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.animation": "1.0.0",

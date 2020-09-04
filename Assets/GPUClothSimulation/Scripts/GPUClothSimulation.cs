@@ -88,10 +88,7 @@ public class GPUClothSimulation : MonoBehaviour
   #endregion
 
   #region Kernels
-  int SolveExternalForce;
-  int SolveDistanceConstraint;
-  int SolveDihedralConstraint;
-  int AverageConstraintDeltas;
+  int SolveExternalForce, SolveDistanceConstraint, SolveDihedralConstraint, AverageConstraintDeltas;
   #endregion
 
   void Start()
@@ -99,6 +96,12 @@ public class GPUClothSimulation : MonoBehaviour
     if (startSimulationOnPlay) simulate = true;
     meshData.particles[264].invMass = 0;
     meshData.particles[0].invMass = 0;
+
+    InitKernels();
+    InitBuffers();
+    SetGPUConstants();
+    SetGPUParameters();
+    SetGPUBuffers();
   }
 
   void Update()
@@ -108,8 +111,24 @@ public class GPUClothSimulation : MonoBehaviour
     if (simulate && timePassed == 0.0f)
     {
       SimulateOneTimeStep(deltaTimeStep);
-      UpdateDataToMesh(deltaTimeStep);
+      // UpdateDataToMesh(deltaTimeStep);
     }
+  }
+
+  void OnDestroy()
+  {
+    pos.Release();
+    predictedPos.Dispose();
+    velocity.Dispose();
+    mass.Dispose();
+    invMass.Dispose();
+    edge.Dispose();
+    restLength.Dispose();
+    neighborTriangle.Dispose();
+    restAngle.Dispose();
+    tri.Dispose();
+    deltaPosUint.Dispose();
+    deltaCount.Dispose();
   }
 
   public void SimulateOneTimeStep(float dt)
@@ -229,6 +248,63 @@ public class GPUClothSimulation : MonoBehaviour
     clothSolver.SetBuffer(AverageConstraintDeltas, "predictedPos", predictedPos);
     clothSolver.SetBuffer(AverageConstraintDeltas, "deltaPosUint", deltaPosUint);
     clothSolver.SetBuffer(AverageConstraintDeltas, "deltaCount", deltaCount);
+
+    // Set GPU Buffers init data
+    Vector3[] _pos = new Vector3[totalVerts], _predictedPos = new Vector3[totalVerts], _velocity = new Vector3[totalVerts];
+    float[] _mass = new float[totalVerts], _invMass = new float[totalVerts];
+    int[] _deltaCount = new int[totalVerts];
+    uint3[] _deltaPosUint = new uint3[totalVerts];
+
+    int[] _edge = new int[totalEdges * 2], _neighborTriangle = new int[totalNeighborTriangles * 4];
+    float[] _restLength = new float[totalEdges], _restAngle = new float[totalNeighborTriangles];
+    int[] _tri = new int[totalTriangles * 3];
+
+    for (int i=0; i < totalVerts; i++)
+    {
+      _pos[i] = meshData.particles[i].pos;
+      _predictedPos[i] = meshData.particles[i].predictedPos;
+      _mass[i] = meshData.particles[i].mass;
+      _invMass[i] = meshData.particles[i].invMass;
+      _deltaCount[i] = 0;
+      _deltaPosUint[i] = new uint3();
+      _deltaPosUint[i].u1 = _deltaPosUint[i].u2 = _deltaPosUint[i].u3 = 0;
+    }
+
+    for (int i=0; i < totalEdges; i++)
+    {
+      _edge[i*2] = meshData.edges[i].p0;
+      _edge[i*2 + 1] = meshData.edges[i].p1;
+      _restLength[i] = meshData.edges[i].restLength;
+    }
+
+    for (int i=0; i < totalNeighborTriangles; i++)
+    {
+      _neighborTriangle[i*4] = meshData.neighborTriangles[i].p0;
+      _neighborTriangle[i*4 + 1] = meshData.neighborTriangles[i].p1;
+      _neighborTriangle[i*4 + 2] = meshData.neighborTriangles[i].p2;
+      _neighborTriangle[i*4 + 3] = meshData.neighborTriangles[i].p3;
+      _restAngle[i] = meshData.neighborTriangles[i].restAngle;
+    }
+
+    for (int i=0; i < totalTriangles; i++)
+    {
+      _tri[i*3] = meshData.triangles[i].p0;
+      _tri[i*3 + 1] = meshData.triangles[i].p1;
+      _tri[i*3 + 2] = meshData.triangles[i].p2;
+    }
+
+    pos.SetData(_pos);
+    predictedPos.SetData(_predictedPos);
+    velocity.SetData(_velocity);
+    mass.SetData(_mass);
+    invMass.SetData(_invMass);
+    deltaCount.SetData(_deltaCount);
+    deltaPosUint.SetData(_deltaPosUint);
+    edge.SetData(_edge);
+    restLength.SetData(_restLength);
+    neighborTriangle.SetData(_neighborTriangle);
+    restAngle.SetData(_restAngle);
+    tri.SetData(_tri);
   }
   #endregion
 }

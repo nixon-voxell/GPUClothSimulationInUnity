@@ -6,6 +6,7 @@
     _MainTex ("Albedo (RGB)", 2D) = "white" {}
     _Glossiness ("Smoothness", Range(0,1)) = 0.5
     _Metallic ("Metallic", Range(0,1)) = 0.0
+    _firstVertexIdx ("First Vertex ID", int) = 0
   }
   SubShader
   {
@@ -13,29 +14,48 @@
     LOD 200
 
     CGPROGRAM
-    // Physically based Standard lighting model, and enable shadows on all light types
-    #pragma surface surf Standard fullforwardshadows
+    #pragma surface surf Standard fullforwardshadows vertex:vert addshadow
+    #pragma target 5.0
 
-    // Use shader model 3.0 target, to get nicer looking lighting
-    #pragma target 3.0
+    #include "./DataStruct.cginc"
+
+    // #ifdef SHADER_API_D3D11
+    // StructuredBuffer<float3> pos;
+    // #endif
 
     sampler2D _MainTex;
+    half _Glossiness;
+    half _Metallic;
+    fixed4 _Color;
+    int _firstVertexIdx;
 
     struct Input
     {
       float2 uv_MainTex;
     };
 
-    half _Glossiness;
-    half _Metallic;
-    fixed4 _Color;
+    struct appdata
+    {
+      float4 vertex : POSITION;
+      float3 normal : NORMAL;
+      float4 texcoord : TEXCOORD0;
+      float4 texcoord1 : TEXCOORD1;
+      float4 texcoord2 : TEXCOORD2;
 
-    // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
-    // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
-    // #pragma instancing_options assumeuniformscaling
+      uint idx : SV_VertexID;
+    };
+
     UNITY_INSTANCING_BUFFER_START(Props)
       // put more per-instance properties here
     UNITY_INSTANCING_BUFFER_END(Props)
+
+    void vert(inout appdata v, out Input o)
+    {
+      UNITY_INITIALIZE_OUTPUT(Input, o);
+      #ifdef SHADER_API_D3D11
+      v.vertex.xyz = pos[v.idx + _firstVertexIdx];
+      #endif
+    }
 
     void surf (Input IN, inout SurfaceOutputStandard o)
     {

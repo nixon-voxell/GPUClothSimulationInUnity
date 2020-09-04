@@ -136,15 +136,15 @@ void AverageConstraintDeltas(uint3 id : SV_DispatchThreadID)
   if (deltaCount[idx] > EPSILON)
   {
     float3 deltaPos;
-    deltaPos.x = asfloat(deltaPosAsUint[idx].x);
-    deltaPos.y = asfloat(deltaPosAsUint[idx].y);
-    deltaPos.z = asfloat(deltaPosAsUint[idx].z);
+    deltaPos.x = asfloat(deltaPosUint[idx].x);
+    deltaPos.y = asfloat(deltaPosUint[idx].y);
+    deltaPos.z = asfloat(deltaPosUint[idx].z);
 
     deltaPos /= deltaCount[idx];
     predictedPos[idx] += deltaPos * 1.5;
   }
 
   // reset delta buffers to zero
-  deltaPosAsUint[idx] = uint3(0, 0, 0);
+  deltaPosUint[idx] = uint3(0, 0, 0);
   deltaCount[idx] = 0;
 }

@@ -77,4 +77,11 @@ namespace DataStruct
   {
     public List<int> indices;
   }
+
+  public struct uint3
+  {
+    public uint u1;
+    public uint u2;
+    public uint u3;
+  }
 }
