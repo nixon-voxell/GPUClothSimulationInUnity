@@ -13,82 +13,179 @@ using Utilities;
 public class GPUClothSimulationEditor : Editor
 {
   GPUClothSimulation clothSim;
-  GUIStyle boldTextStyle = new GUIStyle();
 
   List<Vector3> meshVerts;
   int[] meshTriangles;
 
+  const int SpaceA = 30, SpaceB = 10;
+
+  GUIStyle centeredLabelStyle, foldoutStyle, subFoldoutStyle, notes, box;
+
+  void EnsureStyles()
+  {
+    centeredLabelStyle = new GUIStyle(GUI.skin.GetStyle("Label"));
+    centeredLabelStyle.alignment = TextAnchor.UpperCenter;
+    centeredLabelStyle.fontStyle = FontStyle.Bold;
+    centeredLabelStyle.fontSize = 12;
+
+    foldoutStyle = new GUIStyle(EditorStyles.foldout);
+    foldoutStyle.fontStyle = FontStyle.Bold;
+    foldoutStyle.fontSize = 14;
+
+    subFoldoutStyle = new GUIStyle(EditorStyles.foldout);
+    subFoldoutStyle.fontStyle = FontStyle.Bold;
+    subFoldoutStyle.fontSize = 12;
+    subFoldoutStyle.normal.textColor = Color.gray;
+
+    notes = new GUIStyle(GUI.skin.GetStyle("label"));
+    notes.fontStyle = FontStyle.Italic;
+    notes.fontSize = 10;
+    notes.alignment = TextAnchor.MiddleRight;
+
+    box = GUI.skin.box;
+    box.padding = new RectOffset(10, 10, 10, 10);
+  }
+
   void OnEnable()
   {
     clothSim = (GPUClothSimulation)target;
-    if (EditorGUIUtility.isProSkin) boldTextStyle.normal.textColor = new Color(1, 1, 1, 0.8f);
-    else boldTextStyle.normal.textColor = Color.black;
-    boldTextStyle.fontStyle = FontStyle.Bold;
   }
 
   public override void OnInspectorGUI()
   {
+    if (GUILayout.Button("Refresh Editor Layout")) EnsureStyles();
+    if (centeredLabelStyle == null) EnsureStyles();
+
     if (clothSim.gridSize > 0) clothSim.invGridSize = 1.0f / clothSim.gridSize;
     else clothSim.gridSize = 0;
 
-    GUILayout.Label("Initializaion", boldTextStyle);
+    GUILayout.Space(SpaceB);
+    EditorGUI.BeginChangeCheck();
 
-    // JSON
-    GUI.backgroundColor = Color.yellow;
-    if (GUILayout.Button("Select JSON File"))
+    #region Initialization
+    clothSim.showInitialization = EditorGUILayout.Foldout(clothSim.showInitialization, "Initialization", foldoutStyle);
+    if (clothSim.showInitialization)
     {
-      SelectFile();
-    }
-    if (GUILayout.Button("Load Data from JSON"))
-    {
-      LoadDataFromJson();
-    }
+      GUILayout.BeginVertical(box);
+      // JSON
+      GUI.backgroundColor = Color.yellow;
+      if (GUILayout.Button("Select JSON File")) SelectFile();
+      GUI.backgroundColor = Color.white;
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("path"), new GUIContent("JSON File"));
 
-    // build front mesh
-    GUI.backgroundColor = Color.magenta;
-    if (clothSim.mesh == null)
-    {
-      if (GUILayout.Button("Build Mesh")) BuildMesh();
-    } else
-    {
-      if (GUILayout.Button("Rebuild Mesh")) BuildMesh();
-    }
-    
+      GUILayout.Space(SpaceB);
 
-    GUILayout.Space(10);
+      GUI.backgroundColor = Color.yellow;
+      if (GUILayout.Button("Load Data from JSON")) LoadDataFromJson();
+      GUI.backgroundColor = Color.white;
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("totalVerts"), new GUIContent("Total Vertices/Particles"));
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("totalEdges"), new GUIContent("Total Edges"));
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("totalTriangles"), new GUIContent("Total Triangles"));
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("totalNeighborTriangles"), new GUIContent("Total Neighbor Triangles"));
 
-    // Create mesh for the other side
-    GUI.backgroundColor = Color.magenta;
-    if (clothSim.transform.childCount == 0)
-    {
-      if (GUILayout.Button("Create Back Side"))
+      GUILayout.Space(SpaceB);
+
+      // build front mesh
+      GUI.backgroundColor = Color.magenta;
+      if (clothSim.mesh == null)
       {
-        clothSim.backSide = new GameObject("BackSide");
-        clothSim.backSide.transform.parent = clothSim.transform;
-        BuildBackSide();
-      }
-    } else
-    {
-      if (GUILayout.Button("Recreate Back Side"))
+        if (GUILayout.Button("Build Mesh")) BuildMesh();
+      } else
       {
-        BuildBackSide();
+        if (GUILayout.Button("Rebuild Mesh")) BuildMesh();
       }
+      // Create mesh for the other side
+      GUI.backgroundColor = Color.magenta;
+      if (clothSim.transform.childCount == 0)
+      {
+        if (GUILayout.Button("Create Back Side"))
+        {
+          clothSim.backSide = new GameObject("BackSide");
+          clothSim.backSide.transform.parent = clothSim.transform;
+          BuildBackSide();
+        }
+      } else
+      {
+        if (GUILayout.Button("Recreate Back Side")) BuildBackSide();
+      }
+      GUILayout.EndVertical();
+      GUILayout.Space(SpaceA);
     }
-    
-    // apply materials for front and back of the mesh
-    GUI.backgroundColor = Color.yellow;
-    if (GUILayout.Button("Apply Materials"))
-    {
-      clothSim.GetComponent<MeshRenderer>().material = clothSim.frontMaterial;
-      clothSim.transform.GetChild(0).GetComponent<MeshRenderer>().material = clothSim.backMaterial;
-    }
-
-    // draw the default inspector with all the public variables
     GUI.backgroundColor = Color.white;
-    DrawDefaultInspector();
+    #endregion
 
-    GUILayout.Space(10);
+    #region Materials
+    clothSim.showMaterials = EditorGUILayout.Foldout(clothSim.showMaterials, "Materials", foldoutStyle);
+    if (clothSim.showMaterials)
+    {
+      GUILayout.BeginVertical(box);
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("frontMaterial"), new GUIContent("Front Material"));
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("backMaterial"), new GUIContent("Back Material"));
+      GUILayout.Space(SpaceB);
+      // apply materials for front and back of the mesh
+      GUI.backgroundColor = Color.cyan;
+      if (GUILayout.Button("Apply Materials"))
+      {
+        clothSim.GetComponent<MeshRenderer>().material = clothSim.frontMaterial;
+        clothSim.transform.GetChild(0).GetComponent<MeshRenderer>().material = clothSim.backMaterial;
+      }
+      GUILayout.EndVertical();
+      GUILayout.Space(SpaceA);
+    }
+    GUI.backgroundColor = Color.white;
+    #endregion
 
+    #region Cloth Parameters
+    clothSim.showClothParameters = EditorGUILayout.Foldout(clothSim.showClothParameters, "Cloth Parameters", foldoutStyle);
+    if (clothSim.showClothParameters)
+    {
+      GUILayout.BeginVertical(box);
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("clothSolver"), new GUIContent("Cloth Solver CS"));
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("gravity"), new GUIContent("Gravity"));
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("damping"), new GUIContent("Veloctiy Damping"));
+      GUILayout.Space(SpaceB);
+      EditorGUILayout.LabelField("Distance Constraint", notes);
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("compressionStiffness"), new GUIContent("Compression Stiffness"));
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("stretchStiffness"), new GUIContent("Stretch Stiffness"));
+      GUILayout.Space(SpaceB);
+      EditorGUILayout.LabelField("Bending Constraint", notes);
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("bendingStiffness"), new GUIContent("Bending Stiffness"));
+      GUILayout.Space(SpaceB);
+      EditorGUILayout.LabelField("Self Collision", notes);
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("thickness"), new GUIContent("Cloth Thickness"));
+      GUILayout.Space(SpaceB*2);
+
+      clothSim.showSpatialHashing = EditorGUILayout.Foldout(clothSim.showSpatialHashing, "Spatial Hashing", subFoldoutStyle);
+      if (clothSim.showSpatialHashing)
+      {
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("gridSize"), new GUIContent("Grid Size"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("invGridSize"), new GUIContent("Invert Grid Size"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("tableSize"), new GUIContent("Hash Table Size"));
+        
+        GUILayout.Space(SpaceB);
+      }
+
+      clothSim.showSimulationSettings = EditorGUILayout.Foldout(clothSim.showSimulationSettings, "Simulation Settings", subFoldoutStyle);
+      if (clothSim.showSimulationSettings)
+      {
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("iterationSteps"), new GUIContent("Iterations Steps"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("deltaTimeStep"), new GUIContent("Delta Time Step"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("startSimulationOnPlay"), new GUIContent("Start Simulation On Play?"));
+
+        GUILayout.Space(SpaceB);
+      }
+      GUILayout.EndVertical();
+      GUILayout.Space(SpaceA);
+    }
+    GUI.backgroundColor = Color.white;
+    #endregion
+
+    GUILayout.Space(SpaceB);
+
+    #region Testing
+    GUI.backgroundColor = Color.black;
+    GUILayout.BeginVertical(box);
+    // GUILayout.Space(SpaceB);
     // simulate one time step in editor and play mode
     GUI.backgroundColor = new Color(0.8f, 0.9f, 1f, 1f);
     if (GUILayout.Button("Simulate 1 Time Step"))
@@ -119,6 +216,23 @@ public class GPUClothSimulationEditor : Editor
     {
       LoadDataFromJson(); BuildMesh(); BuildBackSide();
     }
+    GUI.backgroundColor = Color.white;
+    // GUILayout.Space(SpaceB);
+    GUILayout.EndVertical();
+    #endregion
+
+    GUILayout.Space(SpaceA);
+
+    #region End
+    EditorGUILayout.LabelField("~ DO NOT MODIFY BELOW ~", centeredLabelStyle);
+    if(EditorGUI.EndChangeCheck()) EditorApplication.QueuePlayerLoopUpdate();
+    serializedObject.ApplyModifiedProperties();
+    clothSim.showDefault = EditorGUILayout.Foldout(clothSim.showDefault, "Default Inspector", subFoldoutStyle);
+    if (clothSim.showDefault)
+    {
+      DrawDefaultInspector();
+    }
+    #endregion
   }
 
   #region Button Functions

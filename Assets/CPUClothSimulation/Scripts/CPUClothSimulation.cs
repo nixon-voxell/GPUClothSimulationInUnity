@@ -81,6 +81,7 @@ public class CPUClothSimulation : MonoBehaviour
   float timePassed = 0;
   [HideInInspector]
   public bool showInitialization, showMaterials, showClothParameters, showDefault;
+  [HideInInspector]
   public bool showSpatialHashing, showSimulationSettings;
   #endregion
 

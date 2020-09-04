@@ -9,15 +9,15 @@ using DataStruct;
 public class GPUClothSimulation : MonoBehaviour
 {
   #region Initializattion;
-  [ConditionalHideAttribute("hide")]
+  [ConditionalHideAttribute("hide"), SerializeField]
   public string path;
-  [ConditionalHideAttribute("hide")]
+  [ConditionalHideAttribute("hide"), SerializeField]
   public int totalVerts;
-  [ConditionalHideAttribute("hide")]
+  [ConditionalHideAttribute("hide"), SerializeField]
   public int totalEdges;
-  [ConditionalHideAttribute("hide")]
+  [ConditionalHideAttribute("hide"), SerializeField]
   public int totalTriangles;
-  [ConditionalHideAttribute("hide")]
+  [ConditionalHideAttribute("hide"), SerializeField]
   public int totalNeighborTriangles;
 
   [HideInInspector]
@@ -31,38 +31,43 @@ public class GPUClothSimulation : MonoBehaviour
   #endregion
 
   #region Materials
-  [Header("Materials")]
+  [SerializeField]
   public Material frontMaterial;
+  [SerializeField]
   public Material backMaterial;
   #endregion
 
   #region Cloth Simulation Parameters
-  [Header("Cloth Simulation Parameters")]
+  [SerializeField]
   public ComputeShader clothSolver;
+  [SerializeField]
   public Vector3 gravity = new Vector3(0, -9.81f, 0);
-  [Range(0, 1)]
+  [Range(0, 1), SerializeField]
   public float compressionStiffness = 1;
-  [Range(0, 1)]
+  [Range(0, 1), SerializeField]
   public float stretchStiffness = 1;
-  [Range(0, 1)]
+  [Range(0, 1), SerializeField]
   public float bendingStiffness = 0.1f;
   public float thickness = 0.02f;
-  [Range(0.9f, 1)]
+  [Range(0.9f, 1), SerializeField]
   public float damping = 0.99f;
   #endregion
 
   #region Spatial Hashing
-  [Header("Spatial Hashing")]
+  [SerializeField]
   public int gridSize = 1;
-  [ConditionalHideAttribute("hide")]
+  [ConditionalHideAttribute("hide"), SerializeField]
   public float invGridSize;
+  [SerializeField]
   public int tableSize = 2000;
   #endregion
 
   #region Simulation
-  [Header("Simulation")]
+  [SerializeField]
   public uint iterationSteps = 2;
+  [SerializeField]
   public float deltaTimeStep = 0.01f;
+  [SerializeField]
   public bool startSimulationOnPlay = true;
   #endregion
 
@@ -72,6 +77,10 @@ public class GPUClothSimulation : MonoBehaviour
   [HideInInspector]
   public bool simulate = false;
   float timePassed = 0;
+  [HideInInspector]
+  public bool showInitialization, showMaterials, showClothParameters, showDefault;
+  [HideInInspector]
+  public bool showSpatialHashing, showSimulationSettings;
   #endregion
 
   #region Compute Buffers
