@@ -6,12 +6,12 @@ This repository is still currently under development, so everything is still in 
 My goal is to replicate what this legend did: https://youtu.be/kCGHXlLR3l8 (A smooth and interactive cloth simulation)
 
 Currently, my cloth simulation uses Postion Based Dynamics and supports:
+- Aerodynamics (lift and drag) [Wind Effect]
 - Distance Constraint
 - Bending Constraint
 - Point Triangle Distance Constraint (Self Collision)
 
 Features comming soon:
-- Aerodynamics (lift and drag) [Wind Effect]
 - Vivace Gauss Seidel Method for optimization on GPU (random graph coloring)
 - Primitive Shape Collision (Sphere, Box and Capsule)
 
