@@ -36,6 +36,27 @@ namespace PositionBasedDynamics
       return true;
     }
 
+    public static void WindForce(
+      float dt,
+      Vector3 p0, float w0,
+      Vector3 p1, float w1,
+      Vector3 p2, float w2,
+      Vector3 windDir,
+      float windForce,
+      out Vector3 corr0,
+      out Vector3 corr1,
+      out Vector3 corr2)
+    {
+      Vector3 triDir = Vector3.Normalize(Vector3.Cross(p1-p0, p2-p0));
+      float windFactor = Vector3.Dot(triDir, windDir);
+      int dirCorr = windFactor > 0 ? 1 : -1;
+      windFactor = windFactor > 0 ? windFactor : -windFactor;
+
+      corr0 = triDir * dirCorr * windForce * windFactor * w0 * dt * dt;
+      corr1 = triDir * dirCorr * windForce * windFactor * w1 * dt * dt;
+      corr2 = triDir * dirCorr * windForce * windFactor * w2 * dt * dt;
+    }
+
     public static bool DistanceConstraint(
       Vector3 p0, float w0,
       Vector3 p1, float w1,

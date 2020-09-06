@@ -53,6 +53,8 @@ public class CPUClothSimulation : MonoBehaviour
   public float thickness = 0.02f;
   [Range(0.9f, 1), SerializeField]
   public float damping = 0.99f;
+  [SerializeField]
+  public WindZone wind;
   #endregion
 
   #region Spatial Hashing
@@ -89,8 +91,9 @@ public class CPUClothSimulation : MonoBehaviour
   {
     if (startSimulationOnPlay) simulate = true;
     // pinned particles
-    meshData.particles[264].invMass = 0;
+    // meshData.particles[264].invMass = 0;
     meshData.particles[0].invMass = 0;
+    meshData.particles[52].invMass = 0;
   }
 
   void Update()
@@ -116,21 +119,58 @@ public class CPUClothSimulation : MonoBehaviour
   public void SimulateOneTimeStep(float dt)
   {
     #region Apply External Force
-    for (int i=0; i < totalVerts; i++)
+    for (int v=0; v < totalVerts; v++)
     {
       Vector3 force = Vector3.zero;
       Vector3 corr;
       // add gravity acceleration (f = ma)
-      force += gravity * meshData.particles[i].mass;
-      
+      force += gravity * meshData.particles[v].mass;
+
       if (PBD.ExternalForce(
         dt,
-        meshData.particles[i].predictedPos,
-        meshData.particles[i].velocity,
-        meshData.particles[i].invMass,
+        meshData.particles[v].predictedPos,
+        meshData.particles[v].velocity,
+        meshData.particles[v].invMass,
         force,
         damping,
-        out corr)) meshData.particles[i].predictedPos += corr;
+        out corr)) meshData.particles[v].predictedPos += corr;
+    }
+    #endregion
+
+    #region Apply Wind Force
+    float dirX = wind.GetComponentInParent<Transform>().eulerAngles.x % 360 / 360;
+    float dirY = wind.GetComponentInParent<Transform>().eulerAngles.y % 360 / 360;
+    float dirZ = wind.GetComponentInParent<Transform>().eulerAngles.z % 360 / 360;
+
+    // TODO: change this to real direction the arrow is pointing
+    Vector3 windDir = new Vector3(dirX, dirY, dirZ);
+
+    float windForce = wind.windMain;
+    for (int t=0; t < totalTriangles; t++)
+    {
+      Triangle tri = meshData.triangles[t];
+      Vector3 p0 = meshData.particles[tri.p0].predictedPos;
+      Vector3 p1 = meshData.particles[tri.p1].predictedPos;
+      Vector3 p2 = meshData.particles[tri.p2].predictedPos;
+
+      float w0 = meshData.particles[tri.p0].invMass;
+      float w1 = meshData.particles[tri.p1].invMass;
+      float w2 = meshData.particles[tri.p2].invMass;
+
+      Vector3 corr0, corr1, corr2;
+
+      PBD.WindForce(
+        dt,
+        p0, w0,
+        p1, w1,
+        p2, w2,
+        windDir,
+        windForce,
+        out corr0, out corr1, out corr2);
+
+      meshData.particles[tri.p0].predictedPos += corr0;
+      meshData.particles[tri.p1].predictedPos += corr1;
+      meshData.particles[tri.p2].predictedPos += corr2;
     }
     #endregion
 

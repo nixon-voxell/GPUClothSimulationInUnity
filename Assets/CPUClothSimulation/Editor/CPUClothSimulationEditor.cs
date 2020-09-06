@@ -31,11 +31,14 @@ public class CPUClothSimulationEditor : Editor
     foldoutStyle = new GUIStyle(EditorStyles.foldout);
     foldoutStyle.fontStyle = FontStyle.Bold;
     foldoutStyle.fontSize = 14;
+    foldoutStyle.normal.textColor = Color.gray;
+    foldoutStyle.onNormal.textColor = new Color(0.7f, 1f, 1f, 1f);
 
     subFoldoutStyle = new GUIStyle(EditorStyles.foldout);
     subFoldoutStyle.fontStyle = FontStyle.Bold;
     subFoldoutStyle.fontSize = 12;
     subFoldoutStyle.normal.textColor = Color.gray;
+    subFoldoutStyle.onNormal.textColor = new Color(0.7f, 1f, 1f, 1f);
 
     notes = new GUIStyle(GUI.skin.GetStyle("label"));
     notes.fontStyle = FontStyle.Italic;
@@ -63,9 +66,10 @@ public class CPUClothSimulationEditor : Editor
     EditorGUI.BeginChangeCheck();
 
     #region Initialization
-    clothSim.showInitialization = EditorGUILayout.Foldout(clothSim.showInitialization, "Initialization", foldoutStyle);
+    clothSim.showInitialization = EditorGUILayout.Foldout(clothSim.showInitialization, "Initialization", true, foldoutStyle);
     if (clothSim.showInitialization)
     {
+      GUILayout.BeginVertical(box);
       // JSON
       GUI.backgroundColor = Color.yellow;
       if (GUILayout.Button("Select JSON File")) SelectFile();
@@ -107,15 +111,17 @@ public class CPUClothSimulationEditor : Editor
       {
         if (GUILayout.Button("Recreate Back Side")) BuildBackSide();
       }
+      GUILayout.EndVertical();
       GUILayout.Space(SpaceA);
     }
     GUI.backgroundColor = Color.white;
     #endregion
 
     #region Materials
-    clothSim.showMaterials = EditorGUILayout.Foldout(clothSim.showMaterials, "Materials", foldoutStyle);
+    clothSim.showMaterials = EditorGUILayout.Foldout(clothSim.showMaterials, "Materials", true, foldoutStyle);
     if (clothSim.showMaterials)
     {
+      GUILayout.BeginVertical(box);
       EditorGUILayout.PropertyField(serializedObject.FindProperty("frontMaterial"), new GUIContent("Front Material"));
       EditorGUILayout.PropertyField(serializedObject.FindProperty("backMaterial"), new GUIContent("Back Material"));
       GUILayout.Space(SpaceB);
@@ -126,17 +132,20 @@ public class CPUClothSimulationEditor : Editor
         clothSim.GetComponent<MeshRenderer>().material = clothSim.frontMaterial;
         clothSim.transform.GetChild(0).GetComponent<MeshRenderer>().material = clothSim.backMaterial;
       }
+      GUILayout.EndVertical();
       GUILayout.Space(SpaceA);
     }
     GUI.backgroundColor = Color.white;
     #endregion
 
     #region Cloth Parameters
-    clothSim.showClothParameters = EditorGUILayout.Foldout(clothSim.showClothParameters, "Cloth Parameters", foldoutStyle);
+    clothSim.showClothParameters = EditorGUILayout.Foldout(clothSim.showClothParameters, "Cloth Parameters", true, foldoutStyle);
     if (clothSim.showClothParameters)
     {
+      GUILayout.BeginVertical(box);
       EditorGUILayout.PropertyField(serializedObject.FindProperty("gravity"), new GUIContent("Gravity"));
       EditorGUILayout.PropertyField(serializedObject.FindProperty("damping"), new GUIContent("Veloctiy Damping"));
+      EditorGUILayout.PropertyField(serializedObject.FindProperty("wind"), new GUIContent("Directional Wind Zone"));
       GUILayout.Space(SpaceB);
       EditorGUILayout.LabelField("Distance Constraint", notes);
       EditorGUILayout.PropertyField(serializedObject.FindProperty("compressionStiffness"), new GUIContent("Compression Stiffness"));
@@ -149,7 +158,7 @@ public class CPUClothSimulationEditor : Editor
       EditorGUILayout.PropertyField(serializedObject.FindProperty("thickness"), new GUIContent("Cloth Thickness"));
       GUILayout.Space(SpaceB*2);
 
-      clothSim.showSpatialHashing = EditorGUILayout.Foldout(clothSim.showSpatialHashing, "Spatial Hashing", subFoldoutStyle);
+      clothSim.showSpatialHashing = EditorGUILayout.Foldout(clothSim.showSpatialHashing, "Spatial Hashing", true, subFoldoutStyle);
       if (clothSim.showSpatialHashing)
       {
         EditorGUILayout.PropertyField(serializedObject.FindProperty("gridSize"), new GUIContent("Grid Size"));
@@ -159,7 +168,7 @@ public class CPUClothSimulationEditor : Editor
         GUILayout.Space(SpaceB);
       }
 
-      clothSim.showSimulationSettings = EditorGUILayout.Foldout(clothSim.showSimulationSettings, "Simulation Settings", subFoldoutStyle);
+      clothSim.showSimulationSettings = EditorGUILayout.Foldout(clothSim.showSimulationSettings, "Simulation Settings", true, subFoldoutStyle);
       if (clothSim.showSimulationSettings)
       {
         EditorGUILayout.PropertyField(serializedObject.FindProperty("iterationSteps"), new GUIContent("Iterations Steps"));
@@ -168,6 +177,7 @@ public class CPUClothSimulationEditor : Editor
 
         GUILayout.Space(SpaceB);
       }
+      GUILayout.EndVertical();
       GUILayout.Space(SpaceA);
     }
     GUI.backgroundColor = Color.white;
