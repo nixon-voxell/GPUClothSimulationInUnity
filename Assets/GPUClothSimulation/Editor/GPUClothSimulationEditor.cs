@@ -190,8 +190,8 @@ public class GPUClothSimulationEditor : Editor
     GUI.backgroundColor = new Color(0.8f, 0.9f, 1f, 1f);
     if (GUILayout.Button("Simulate 1 Time Step"))
     {
-      clothSim.SimulateOneTimeStep(clothSim.deltaTimeStep);
-      clothSim.UpdateDataToMesh(clothSim.deltaTimeStep);
+      clothSim.SimulateOneTimeStep();
+      // clothSim.UpdateDataToMesh(clothSim.deltaTimeStep);
     }
 
     // allow user to control if we want to start or stop stimulating the cloth in play mode

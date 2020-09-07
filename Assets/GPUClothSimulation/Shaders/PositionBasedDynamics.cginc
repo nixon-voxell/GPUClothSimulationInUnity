@@ -21,6 +21,27 @@ bool ExternalForce(
   return true;
 }
 
+void WindForce(
+  float dt,
+  float3 p0, float w0,
+  float3 p1, float w1,
+  float3 p2, float w2,
+  float3 windDir,
+  float windForce,
+  out float3 corr0,
+  out float3 corr1,
+  out float3 corr2)
+{
+  float3 triDir = normalize(cross(p1-p0, p2-p0));
+  float windFactor = dot(triDir, windDir);
+  int dirCorr = windFactor > 0 ? 1 : -1;
+  windFactor = windFactor > 0 ? windFactor : -windFactor;
+
+  corr0 = triDir * dirCorr * windForce * windFactor * w0 * dt * dt;
+  corr1 = triDir * dirCorr * windForce * windFactor * w1 * dt * dt;
+  corr2 = triDir * dirCorr * windForce * windFactor * w2 * dt * dt;
+}
+
 bool DistanceConstraint(
   float3 p0, float w0,
   float3 p1, float w1,

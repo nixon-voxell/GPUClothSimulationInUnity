@@ -33,6 +33,19 @@ THREADS
 void SolveDistanceConstraint(uint3 id: SV_DispatchThreadID)
 {
   uint idx = id.x;
+  if (idx*3 + 2 > totalTriangles) return;
+
+  int t0 = tri[idx*3];
+  int t1 = tri[idx*3 + 1];
+  int t2 = tri[idx*3 + 2];
+}
+
+
+#pragma kernel SolveWindForce
+THREADS
+void SolveWindForce(uint3 id: SV_DispatchThreadID)
+{
+  uint idx = id.x;
   if (idx*2 + 1 > totalEdges) return;
 
   int e0 = edge[idx*2];

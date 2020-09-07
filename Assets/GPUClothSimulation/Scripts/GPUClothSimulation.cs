@@ -110,8 +110,8 @@ public class GPUClothSimulation : MonoBehaviour
     if (timePassed >= deltaTimeStep) timePassed = 0.0f;
     if (simulate && timePassed == 0.0f)
     {
-      SimulateOneTimeStep(deltaTimeStep);
-      // UpdateDataToMesh(deltaTimeStep);
+      SimulateOneTimeStep();
+      SetGPUBuffers();
     }
   }
 
@@ -131,9 +131,10 @@ public class GPUClothSimulation : MonoBehaviour
     deltaCount.Dispose();
   }
 
-  public void SimulateOneTimeStep(float dt)
+  public void SimulateOneTimeStep()
   {
     #region Apply External Force
+    clothSolver.Dispatch(SolveExternalForce, totalVerts, 1, 1);
     #endregion
 
     #region Collision Constraints
@@ -143,29 +144,36 @@ public class GPUClothSimulation : MonoBehaviour
     for (int iter=0; iter < iterationSteps; iter++)
     {
       #region Distance Constraint
+      clothSolver.Dispatch(SolveDistanceConstraint, totalEdges, 1, 1);
       #endregion
 
       #region Dihedral Constraint
+      clothSolver.Dispatch(SolveDihedralConstraint, totalNeighborTriangles, 1, 1);
       #endregion
     }
     #endregion
+
+    #region Apply Changes
+    clothSolver.Dispatch(AverageConstraintDeltas, totalVerts, 1, 1);
+    #endregion
   }
 
-  public void UpdateDataToMesh(float dt)
-  {
-    List<Vector3> meshVerts = new List<Vector3>();
-    for (int i=0; i < totalVerts; i++)
-    {
-      meshVerts.Add(meshData.particles[i].predictedPos);
-      meshData.particles[i].velocity = (meshData.particles[i].predictedPos - meshData.particles[i].pos) / dt;
-      meshData.particles[i].pos = meshData.particles[i].predictedPos;
-    }
+  // TODO: update mesh data directly from compute buffers
+  // public void UpdateDataToMesh(float dt)
+  // {
+  //   List<Vector3> meshVerts = new List<Vector3>();
+  //   for (int i=0; i < totalVerts; i++)
+  //   {
+  //     meshVerts.Add(meshData.particles[i].predictedPos);
+  //     meshData.particles[i].velocity = (meshData.particles[i].predictedPos - meshData.particles[i].pos) / dt;
+  //     meshData.particles[i].pos = meshData.particles[i].predictedPos;
+  //   }
 
-    mesh.SetVertices(meshVerts);
-    mesh.RecalculateNormals();
-    childMesh.SetVertices(meshVerts);
-    childMesh.RecalculateNormals();
-  }
+  //   mesh.SetVertices(meshVerts);
+  //   mesh.RecalculateNormals();
+  //   childMesh.SetVertices(meshVerts);
+  //   childMesh.RecalculateNormals();
+  // }
 
   #region GPU Kernel & Buffer Initialization
   void InitKernels()
