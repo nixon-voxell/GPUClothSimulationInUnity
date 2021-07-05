@@ -3,6 +3,8 @@ GPU Cloth Simulation For Real-time Application
 
 This repository is still currently under development, so everything is still in testing mode. A lot of things will break, download at your own risk :/
 
+> *Disclaimer: This project is in a paused state so there won't be more updates. In the future, if there are any changes to this project, I will post an issue update on this repository. Stay tune!*
+
 My goal is to replicate what this legend did: https://youtu.be/kCGHXlLR3l8 (A smooth and interactive cloth simulation)
 
 Currently, my cloth simulation uses Postion Based Dynamics and supports:
@@ -15,19 +17,16 @@ Features comming soon:
 - Vivace Gauss Seidel Method for optimization on GPU (random graph coloring)
 - Primitive Shape Collision (Sphere, Box and Capsule)
 
-Look at my plan on [Milanote](https://app.milanote.com/1JS0tP1NMEwO2f?p=qYevXFgGMpr) for more details.
-
 Check out my [YouTube Playlist](https://www.youtube.com/playlist?list=PLlnBGPe6GFdP8So9oS0YVoVjqkmJoREI_) where I record my journey on how I approach this problem!
 
-
-Support me on [Patreon](https://www.patreon.com/voxelltechnologies) so that I can allocate more time to work on this project!
+Support me on [Patreon](https://www.patreon.com/voxelltech) so that I can allocate more time to work on this project!
 
 
 How to use?
 ---
 *Note: The GPU version is not fully developed yet, this tutorial section will not work for the GPU version.
 1. Create a mesh in [Blender](https://blender.org) that you want to simulate.
-2. Use my custom Blender Addon - [Cloth Exporter Tool](https://github.com/voxell-tech/ClothExporter) to transform your mesh into PBD form and export it into your Unity's `StreamingAssets` folder.
+2. Use my custom Blender Addon - [Blender Mesh to JSON](https://github.com/voxell-tech/BlenderMeshToJSON) to transform your mesh into PBD form and export it into your Unity's `StreamingAssets` folder.
 3. Create an empty GameObject in Unity.
 4. Drag and drop `CPUClothSimulation.cs` or `GPUClothSimulation.cs` script onto the GameObject. (Check [Cloth Configurations](#cloth-configurations) for more cloth parameters' information.)
 5. Select the correct JSON file that the Blender Cloth Exporter Tool exports using the button - `Select JSON File`.
