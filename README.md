@@ -64,4 +64,4 @@ Tweak these parameters to balance between accuracy and performance.
 
 License
 ---
-This project is under the GNU Public License, Version 3.
+This project is under the MIT License.
