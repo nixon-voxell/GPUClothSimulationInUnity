@@ -64,4 +64,4 @@ Tweak these parameters to balance between accuracy and performance.
 
 License
 ---
-This project is under the MIT License.
+This project is under MIT License.
